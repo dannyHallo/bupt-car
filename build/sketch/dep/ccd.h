@@ -24,11 +24,12 @@ void pinoutInitCCD()
 
 void captrueCCD()
 {
-    delayMicroseconds(1); /* Integration time in microseconds */
-    delay(10);            /* Integration time in miliseconds  */
+    delayMicroseconds(1);
+    delay(4);
 
     digitalWrite(PINOUT_CCD_CLK, LOW);
     digitalWrite(PINOUT_CCD_SI, HIGH);
+
     digitalWrite(PINOUT_CCD_CLK, HIGH);
     digitalWrite(PINOUT_CCD_SI, LOW);
 
@@ -38,11 +39,21 @@ void captrueCCD()
 
     for (int i = 0; i < cNumPixels; i++)
     {
-        linearPixelsData[i] = analogRead(PINOUT_CCD_AO) / 4; // 8-bit is enough
+        linearPixelsData[i] = analogRead(PINOUT_CCD_AO); // 8-bit is enough
         digitalWrite(PINOUT_CCD_CLK, LOW);
         delayMicroseconds(1);
         digitalWrite(PINOUT_CCD_CLK, HIGH);
     }
+}
+
+void printCCDLinearData(int maxVal)
+{
+    for (int i = 0; i < cNumPixels; i++)
+    {
+        int t = floor(float(linearPixelsData[i]) / float(maxVal) * 10.0f - 0.1f);
+        Serial.print(char(48 + t));
+    }
+    Serial.println();
 }
 
 void printCCDBinaryRawData()
@@ -55,26 +66,36 @@ void printCCDBinaryRawData()
     Serial.println();
 }
 
-void printCCDBinaryProcessedData()
+void printCCDOneHotData()
 {
     for (int i = 0; i < cNumPixels; i++)
     {
-        char c = binaryPixelsOneHotData[i] ? '#' : '-';
+        char c = binaryPixelsOneHotData[i] ? '^' : ' ';
         Serial.print(c);
     }
     Serial.println();
 }
 
-void linearToRawBinary()
+void linearToRawBinary(int &minVal, int &maxVal, int &avgVal)
 {
+    maxVal = 0;
+    minVal = 1e6;
+
     int totalVal = 0;
 
     for (int i = 0; i < cNumPixels; i++)
     {
-        totalVal += linearPixelsData[i];
+        int currentVal = linearPixelsData[i];
+
+        if (maxVal < currentVal)
+            maxVal = currentVal;
+        if (minVal > currentVal)
+            minVal = currentVal;
+
+        totalVal += currentVal;
     }
 
-    int avgVal = customRound(float(totalVal) / float(cNumPixels));
+    avgVal = customRound(float(minVal + maxVal) / 2.0f);
 
     for (int i = 0; i < cNumPixels; i++)
     {
@@ -191,20 +212,25 @@ int getTrackMidPoint()
 
 int processCCD()
 {
+    int minVal = 0;
+    int maxVal = 0;
+    int avgVal = 0;
+
     // Capture
     captrueCCD();
 
     // Process
-    linearToRawBinary();
+    linearToRawBinary(minVal, maxVal, avgVal);
     rawBinaryToOneHot();
 
+    // Serial.println(maxVal);
+
     // Debug
-    // printCCDBinaryRawData();
-    // printCCDBinaryProcessedData();
-    // Serial.println(getTrackMidPoint());
+    // printCCDLinearData(maxVal);
+    printCCDBinaryRawData();
+    printCCDOneHotData();
 
     // Return
     return getTrackMidPoint();
-
-    
+    // return -1;
 }

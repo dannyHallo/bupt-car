@@ -51,10 +51,7 @@ void Task1(void *pvParameters)
 {
     for (;;)
     {
-        // delay(1000);
-        // delay(10);
-
-        trackMidPoint = processCCD();
+        delay(1000);
 
         // digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
     }
@@ -65,8 +62,9 @@ void Task2(void *pvParameters)
     for (;;)
     {
         // motorLoop();
+        trackMidPoint = processCCD();
         Serial.println(trackMidPoint);
-        
+
         if (trackMidPoint != -1)
         {
             servoLoop(trackMidPoint);

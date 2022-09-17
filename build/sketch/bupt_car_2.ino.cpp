@@ -19,7 +19,7 @@ void assignTasks();
 void loop();
 #line 50 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void Task1(void *pvParameters);
-#line 63 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 60 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void Task2(void *pvParameters);
 #line 12 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void setup()
@@ -64,10 +64,7 @@ void Task1(void *pvParameters)
 {
     for (;;)
     {
-        // delay(1000);
-        // delay(10);
-
-        trackMidPoint = processCCD();
+        delay(1000);
 
         // digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
     }
@@ -78,8 +75,9 @@ void Task2(void *pvParameters)
     for (;;)
     {
         // motorLoop();
+        trackMidPoint = processCCD();
         Serial.println(trackMidPoint);
-        
+
         if (trackMidPoint != -1)
         {
             servoLoop(trackMidPoint);
