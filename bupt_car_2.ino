@@ -1,6 +1,7 @@
 #include "dep/pinouts.h"
 #include "dep/boardLed.h"
 #include "dep/ccd.h"
+#include "dep/servo.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
@@ -11,6 +12,7 @@ void setup()
 
     pinoutInitBoardLed();
     pinoutInitCCD();
+    pinoutAndPwmChannelInit();
 
     assignTasks();
 }
@@ -58,6 +60,6 @@ void Task2(void *pvParameters)
 {
     for (;;)
     {
-        delay(1000);
+        servoLoop();
     }
 }

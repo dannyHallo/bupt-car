@@ -192,5 +192,5 @@ void processCCD()
 
     // Debug
     // printCCDBinaryRawData();
-    printCCDBinaryProcessedData();
+    // printCCDBinaryProcessedData();
 }

@@ -131,4 +131,5 @@ c:\Users\Administrator\Desktop\bupt_car_2\build\sketch\bupt_car_2.ino.cpp.o: \
  c:\Users\Administrator\Desktop\bupt_car_2\build\sketch\dep/pinouts.h \
  c:\Users\Administrator\Desktop\bupt_car_2\build\sketch\dep/boardLed.h \
  c:\Users\Administrator\Desktop\bupt_car_2\build\sketch\dep/ccd.h \
- c:\Users\Administrator\Desktop\bupt_car_2\build\sketch\dep/math.h
+ c:\Users\Administrator\Desktop\bupt_car_2\build\sketch\dep/math.h \
+ c:\Users\Administrator\Desktop\bupt_car_2\build\sketch\dep/servo.h

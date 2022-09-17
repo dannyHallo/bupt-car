@@ -29,9 +29,17 @@ inline int customRound(float val)
 }
 
 template <class T>
-inline void lerp(T &val, T maximum)
+inline T lerp(T &val, T maximum)
 {
     clamp(val, 0, 255);
 
     val = customRound(float(val) * float(maximum) / 255.0f);
+    return val;
+}
+
+template <class T>
+inline T map(T &val, T valMin, T valMax, T outMin, T outMax)
+{
+    val = T(float(val - valMin) / float(valMax - valMin) * float(outMax - outMin) + outMin);
+    return val;
 }
