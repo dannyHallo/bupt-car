@@ -5,15 +5,18 @@
 
 const float cAngleLimit = 45.0f; // Max: 90 degrees
 const float cBias = 5.0f;
-const int cResolution = 16; // Max: 16 bit
+const int cServoResolution = 16; // Max: 16 bit
 
-void pinoutAndPwmChannelInit()
+void servoWriteAngle(float angle);
+
+void pinoutAndPwmChannelInitServo()
 {
-    ledcSetup(0, 50, cResolution);  // Channel 0, 50 Hz, 16 bit resolution
-    ledcAttachPin(PINOUT_SERVO, 0); // Attach servo pin to channel 0
+    ledcSetup(0, 50, cServoResolution); // Channel 0, 50 Hz, 16 bit resolution
+    ledcAttachPin(PINOUT_SERVO, 0);     // Attach servo pin to channel 0
+    servoWriteAngle(0);
 }
 
-void servoToAngle(float angle)
+void servoWriteAngle(float angle)
 {
     angle += cBias;
 
@@ -21,31 +24,10 @@ void servoToAngle(float angle)
 
     float t = map(angle, -90.0f, 90.0f, 0.5f, 2.5f);
 
-    ledcWrite(0, (t / 20.0f) * ((1 << cResolution) - 1));
+    ledcWrite(0, (t / 20.0f) * ((1 << cServoResolution) - 1));
 }
 
-void servoLoop()
+void servoLoop(int trackMidPoint)
 {
-    // // increase the LED brightness
-    // for (float angle = -cAngleLimit; angle <= cAngleLimit; angle += 0.2f)
-    // {
-    //     servoToAngle(angle);
-    //     delay(10);
-    // }
-
-    // // increase the LED brightness
-    // for (float angle = cAngleLimit; angle >= -cAngleLimit; angle -= 0.2f)
-    // {
-    //     servoToAngle(angle);
-    //     delay(10);
-    // }
-
-    servoToAngle(-cAngleLimit);
-    delay(1000);
-
-    servoToAngle(0);
-    delay(2000);
-
-    servoToAngle(cAngleLimit);
-    delay(3000);
+    servoWriteAngle(map(float(trackMidPoint), 0.0f, 128.0f, -cAngleLimit, cAngleLimit));
 }

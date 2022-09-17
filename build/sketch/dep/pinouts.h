@@ -11,4 +11,13 @@
 #define PINOUT_CCD_CLK 12 // GPO
 #define PINOUT_CCD_AO 13  // ADC pin required
 
-#define PINOUT_SERVO 18
+#define PINOUT_SERVO 18 // PWM pin required
+
+#define PINOUT_LEFT_MOTOR_FRONT 27  // PWM pin required
+#define PINOUT_LEFT_MOTOR_BACK 26  // PWM pin required
+#define PINOUT_RIGHT_MOTOR_FRONT 33 // PWM pin required
+#define PINOUT_RIGHT_MOTOR_BACK 25 // PWM pin required
+#define PINOUT_LEFT_MOTOR_CODER_1
+#define PINOUT_LEFT_MOTOR_CODER_2
+#define PINOUT_RIGHT_MOTOR_CODER_1
+#define PINOUT_RIGHT_MOTOR_CODER_2

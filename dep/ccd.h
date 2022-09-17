@@ -7,9 +7,10 @@ const int cNumPixels = 128;
 const int cEffectiveLineWidth = 18;
 const float cEffectiveLineWidthTolerence = 0.2f;
 
-extern int linearPixelsData[cNumPixels]{};
-extern bool binaryPixelsRawData[cNumPixels]{};
-extern bool binaryPixelsOneHotData[cNumPixels]{};
+int linearPixelsData[cNumPixels]{};
+bool binaryPixelsRawData[cNumPixels]{};
+bool binaryPixelsOneHotData[cNumPixels]{};
+int trackMidPointStore = -1;
 
 void pinoutInitCCD()
 {
@@ -37,7 +38,7 @@ void captrueCCD()
 
     for (int i = 0; i < cNumPixels; i++)
     {
-        linearPixelsData[i] = analogRead(PINOUT_CCD_AO) / 4; // 8-bit is enough
+        linearPixelsData[i] = analogRead(PINOUT_CCD_AO); // 8-bit is enough
         digitalWrite(PINOUT_CCD_CLK, LOW);
         delayMicroseconds(1);
         digitalWrite(PINOUT_CCD_CLK, HIGH);
@@ -167,21 +168,28 @@ bool formerOneIsCloserToCenter(int a, int b)
 
 void rawBinaryToOneHot()
 {
-    int trackMidPixelFinal = -1;
+    int trackMidPixelTmp = -1;
     int trackMidPixel = 0;
     int trackEndPixel = 0;
 
     while (getMidPoint(trackEndPixel, trackMidPixel, trackEndPixel))
     {
-        if (formerOneIsCloserToCenter(trackMidPixel, trackMidPixelFinal))
-            trackMidPixelFinal = trackMidPixel;
+        if (formerOneIsCloserToCenter(trackMidPixel, trackMidPixelTmp))
+            trackMidPixelTmp = trackMidPixel;
     }
 
-    if (trackMidPixelFinal != -1)
-        drawOneHot(trackMidPixelFinal);
+    trackMidPointStore = trackMidPixelTmp;
+
+    if (trackMidPointStore != -1)
+        drawOneHot(trackMidPointStore);
 }
 
-void processCCD()
+int getTrackMidPoint()
+{
+    return trackMidPointStore;
+}
+
+int processCCD()
 {
     // Capture
     captrueCCD();
@@ -193,4 +201,10 @@ void processCCD()
     // Debug
     // printCCDBinaryRawData();
     // printCCDBinaryProcessedData();
+    // Serial.println(getTrackMidPoint());
+
+    // Return
+    return getTrackMidPoint();
+
+    
 }

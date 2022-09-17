@@ -3,9 +3,12 @@
 # 3 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 2
 # 4 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 2
 # 5 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 2
+# 6 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 2
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
+
+int trackMidPoint = -1;
 
 void setup()
 {
@@ -13,7 +16,8 @@ void setup()
 
     pinoutInitBoardLed();
     pinoutInitCCD();
-    pinoutAndPwmChannelInit();
+    pinoutAndPwmChannelInitServo();
+    pinoutAndPwmChannelInitMotor();
 
     assignTasks();
 }
@@ -25,9 +29,9 @@ void assignTasks()
         "Task1", // Task name
         1000, // Stack size
         
-# 26 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 3 4
+# 30 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 3 4
        __null
-# 26 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+# 30 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
            , // Parameter
         1, // Priority
         &Task1Handle, // Task handle to keep track of created task
@@ -39,9 +43,9 @@ void assignTasks()
         "Task2", // Task name
         1000, // Stack size
         
-# 36 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 3 4
+# 40 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 3 4
        __null
-# 36 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+# 40 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
            , // Parameter
         1, // Priority
         &Task2Handle, // Task handle to keep track of created task
@@ -59,9 +63,9 @@ void Task1(void *pvParameters)
         // delay(1000);
         // delay(10);
 
-        processCCD();
+        trackMidPoint = processCCD();
 
-        digitalWrite(2, !digitalRead(2));
+        // digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
     }
 }
 
@@ -69,6 +73,12 @@ void Task2(void *pvParameters)
 {
     for (;;)
     {
-        servoLoop();
+        // motorLoop();
+        Serial.println(trackMidPoint);
+
+        if (trackMidPoint != -1)
+        {
+            servoLoop(trackMidPoint);
+        }
     }
 }

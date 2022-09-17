@@ -2,9 +2,12 @@
 #include "dep/boardLed.h"
 #include "dep/ccd.h"
 #include "dep/servo.h"
+#include "dep/motor.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
+
+int trackMidPoint = -1;
 
 void setup()
 {
@@ -12,7 +15,8 @@ void setup()
 
     pinoutInitBoardLed();
     pinoutInitCCD();
-    pinoutAndPwmChannelInit();
+    pinoutAndPwmChannelInitServo();
+    pinoutAndPwmChannelInitMotor();
 
     assignTasks();
 }
@@ -50,9 +54,9 @@ void Task1(void *pvParameters)
         // delay(1000);
         // delay(10);
 
-        processCCD();
+        trackMidPoint = processCCD();
 
-        digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
+        // digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
     }
 }
 
@@ -60,6 +64,12 @@ void Task2(void *pvParameters)
 {
     for (;;)
     {
-        servoLoop();
+        // motorLoop();
+        Serial.println(trackMidPoint);
+        
+        if (trackMidPoint != -1)
+        {
+            servoLoop(trackMidPoint);
+        }
     }
 }

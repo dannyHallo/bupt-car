@@ -4,28 +4,32 @@
 #include "dep/boardLed.h"
 #include "dep/ccd.h"
 #include "dep/servo.h"
+#include "dep/motor.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
-#line 9 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+int trackMidPoint = -1;
+
+#line 12 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void setup();
-#line 20 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 24 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void assignTasks();
-#line 44 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 48 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void loop();
-#line 46 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 50 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void Task1(void *pvParameters);
-#line 59 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 63 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void Task2(void *pvParameters);
-#line 9 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 12 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void setup()
 {
     Serial.begin(115200);
 
     pinoutInitBoardLed();
     pinoutInitCCD();
-    pinoutAndPwmChannelInit();
+    pinoutAndPwmChannelInitServo();
+    pinoutAndPwmChannelInitMotor();
 
     assignTasks();
 }
@@ -63,9 +67,9 @@ void Task1(void *pvParameters)
         // delay(1000);
         // delay(10);
 
-        processCCD();
+        trackMidPoint = processCCD();
 
-        digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
+        // digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
     }
 }
 
@@ -73,6 +77,12 @@ void Task2(void *pvParameters)
 {
     for (;;)
     {
-        servoLoop();
+        // motorLoop();
+        Serial.println(trackMidPoint);
+        
+        if (trackMidPoint != -1)
+        {
+            servoLoop(trackMidPoint);
+        }
     }
 }
