@@ -5,23 +5,24 @@
 #include "dep/ccd.h"
 #include "dep/servo.h"
 #include "dep/motor.h"
+#include "dep/bluetooth.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
 int trackMidPoint = -1;
 
-#line 12 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 13 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void setup();
-#line 24 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 26 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void assignTasks();
-#line 48 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
-void loop();
 #line 50 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+void loop();
+#line 52 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void Task1(void *pvParameters);
 #line 60 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void Task2(void *pvParameters);
-#line 12 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+#line 13 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
 void setup()
 {
     Serial.begin(115200);
@@ -30,6 +31,7 @@ void setup()
     pinoutInitCCD();
     pinoutAndPwmChannelInitServo();
     pinoutAndPwmChannelInitMotor();
+    pinoutInitAndOpenBTSerialBluetooth();
 
     assignTasks();
 }
@@ -64,9 +66,7 @@ void Task1(void *pvParameters)
 {
     for (;;)
     {
-        delay(1000);
-
-        // digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
+        checkBTInput();
     }
 }
 

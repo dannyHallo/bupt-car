@@ -4,6 +4,7 @@
 # 4 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 2
 # 5 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 2
 # 6 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 2
+# 7 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 2
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
@@ -18,6 +19,7 @@ void setup()
     pinoutInitCCD();
     pinoutAndPwmChannelInitServo();
     pinoutAndPwmChannelInitMotor();
+    pinoutInitAndOpenBTSerialBluetooth();
 
     assignTasks();
 }
@@ -29,9 +31,9 @@ void assignTasks()
         "Task1", // Task name
         1000, // Stack size
         
-# 30 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 3 4
+# 32 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 3 4
        __null
-# 30 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+# 32 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
            , // Parameter
         1, // Priority
         &Task1Handle, // Task handle to keep track of created task
@@ -43,9 +45,9 @@ void assignTasks()
         "Task2", // Task name
         1000, // Stack size
         
-# 40 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 3 4
+# 42 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino" 3 4
        __null
-# 40 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
+# 42 "c:\\Users\\Administrator\\Desktop\\bupt_car_2\\bupt_car_2.ino"
            , // Parameter
         1, // Priority
         &Task2Handle, // Task handle to keep track of created task
@@ -60,9 +62,7 @@ void Task1(void *pvParameters)
 {
     for (;;)
     {
-        delay(1000);
-
-        // digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
+        checkBTInput();
     }
 }
 

@@ -3,6 +3,7 @@
 #include "dep/ccd.h"
 #include "dep/servo.h"
 #include "dep/motor.h"
+#include "dep/bluetooth.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
@@ -17,6 +18,7 @@ void setup()
     pinoutInitCCD();
     pinoutAndPwmChannelInitServo();
     pinoutAndPwmChannelInitMotor();
+    pinoutInitAndOpenBTSerialBluetooth();
 
     assignTasks();
 }
@@ -51,9 +53,7 @@ void Task1(void *pvParameters)
 {
     for (;;)
     {
-        delay(1000);
-
-        // digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
+        checkBTInput();
     }
 }
 
