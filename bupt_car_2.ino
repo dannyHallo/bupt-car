@@ -4,13 +4,16 @@
 #include "dep/servo.h"
 #include "dep/motor.h"
 #include "dep/bluetooth.h"
+#include "dep/commandParser.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
 int trackMidPoint = -1;
+int command = -1;
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
 
     pinoutInitBoardLed();
@@ -22,11 +25,12 @@ void setup() {
     assignTasks();
 }
 
-void assignTasks() {
+void assignTasks()
+{
     xTaskCreatePinnedToCore(
         Task1,        // Task function
         "Task1",      // Task name
-        10000,         // Stack size
+        2000,         // Stack size
         NULL,         // Parameter
         1,            // Priority
         &Task1Handle, // Task handle to keep track of created task
@@ -36,7 +40,7 @@ void assignTasks() {
     xTaskCreatePinnedToCore(
         Task2,        // Task function
         "Task2",      // Task name
-        10000,         // Stack size
+        2000,         // Stack size
         NULL,         // Parameter
         1,            // Priority
         &Task2Handle, // Task handle to keep track of created task
@@ -47,21 +51,34 @@ void assignTasks() {
 // This loop is automatically assigned to Core 1, so block it manually
 void loop() { delay(1000); }
 
-void Task1(void* pvParameters) {
-    for (;;) {
-        checkBTInput();
+void Task1(void *pvParameters)
+{
+    for (;;)
+    {
+        if (Serial.available())
+        {
+            btSend(Serial.read());
+        }
+
+        command = btRecieve();
+        vTaskDelay(20);
     }
 }
 
-void Task2(void* pvParameters) {
-    for (;;) {
+void Task2(void *pvParameters)
+{
+    for (;;)
+    {
         // motorLoop();
-        trackMidPoint = processCCD();
-        Serial.println(trackMidPoint);
 
-        if (trackMidPoint!=-1) {
-            servoLoop(trackMidPoint);
-        }
+        // trackMidPoint = processCCD();
+        // Serial.println(trackMidPoint);
+
+        // if (trackMidPoint != -1)
+        // {
+        //     servoLoop(trackMidPoint);
+        // }
+        parseCommands(command);
+        vTaskDelay(20);
     }
-    delay(10);
 }

@@ -11,10 +11,20 @@ void pinoutInitAndOpenBTSerialBluetooth()
     Serial.println("Bluetooth configured, now you can pair it!");
 }
 
-void checkBTInput()
+void btSend(int message)
 {
-    if (Serial.available())
+    serialBT.write(message);
+}
+
+int btRecieve()
+{
+    if (serialBT.available())
     {
-        serialBT.write(Serial.read());
+        int message = serialBT.read();
+
+        digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
+        // Serial.println(message); // print on serial monitor
+        return message;
     }
+    return -1;
 }

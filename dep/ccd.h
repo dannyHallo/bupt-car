@@ -210,8 +210,8 @@ int processCCD() {
 
     // Debug
     // printCCDLinearData(maxVal);
-    printCCDBinaryRawData();
-    printCCDOneHotData();
+    // printCCDBinaryRawData();
+    // printCCDOneHotData();
 
     // Return
     //return getTrackMidPoint();
