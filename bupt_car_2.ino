@@ -12,8 +12,7 @@ TaskHandle_t Task2Handle;
 int trackMidPoint = -1;
 int command = -1;
 
-void setup()
-{
+void setup() {
     Serial.begin(115200);
 
     pinoutInitBoardLed();
@@ -25,8 +24,7 @@ void setup()
     assignTasks();
 }
 
-void assignTasks()
-{
+void assignTasks() {
     xTaskCreatePinnedToCore(
         Task1,        // Task function
         "Task1",      // Task name
@@ -51,12 +49,9 @@ void assignTasks()
 // This loop is automatically assigned to Core 1, so block it manually
 void loop() { delay(1000); }
 
-void Task1(void *pvParameters)
-{
-    for (;;)
-    {
-        if (Serial.available())
-        {
+void Task1(void* pvParameters) {
+    for (;;) {
+        if (Serial.available()) {
             btSend(Serial.read());
         }
 
@@ -65,10 +60,8 @@ void Task1(void *pvParameters)
     }
 }
 
-void Task2(void *pvParameters)
-{
-    for (;;)
-    {
+void Task2(void* pvParameters) {
+    for (;;) {
         // motorLoop();
 
         // trackMidPoint = processCCD();
@@ -79,6 +72,6 @@ void Task2(void *pvParameters)
         //     servoLoop(trackMidPoint);
         // }
         parseCommands(command);
-        vTaskDelay(5);
+        vTaskDelay(10);
     }
 }

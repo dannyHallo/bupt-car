@@ -6,6 +6,8 @@
 const int cNumPixels = 128;
 const int cEffectiveLineWidth = 18;
 const float cEffectiveLineWidthTolerence = 0.2f;
+const int minWidth = 15,maxWidth = 30;
+uint64_t clockCycle = 0;
 
 int linearPixelsData[cNumPixels]{};
 bool binaryPixelsRawData[cNumPixels]{};
