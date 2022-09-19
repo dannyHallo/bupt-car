@@ -79,6 +79,6 @@ void Task2(void *pvParameters)
         //     servoLoop(trackMidPoint);
         // }
         parseCommands(command);
-        vTaskDelay(20);
+        vTaskDelay(5);
     }
 }

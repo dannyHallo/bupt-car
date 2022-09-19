@@ -55,7 +55,7 @@ void motorControl(bool lFront, bool rFront, float lPower, float rPower)
 }
 
 // Slow down slowly
-void idle()
+void motorIdle()
 {
     ledcWrite(PWM_CHANNEL_LEFT_MOTOR_FRONT, 0);
     ledcWrite(PWM_CHANNEL_LEFT_MOTOR_BACK, 0);
@@ -64,7 +64,7 @@ void idle()
 }
 
 // Strong break
-void forceBrake()
+void motorBrake()
 {
     ledcWrite(PWM_CHANNEL_LEFT_MOTOR_FRONT, maxResolution);
     ledcWrite(PWM_CHANNEL_LEFT_MOTOR_BACK, maxResolution);
@@ -76,11 +76,11 @@ void motorLoop()
 {
     motorControl(true, true, 60000, 60000);
     delay(500);
-    idle();
+    motorIdle();
     delay(1000);
 
     motorControl(true, true, 60000, 60000);
     delay(500);
-    forceBrake();
+    motorBrake();
     delay(2000);
 }
