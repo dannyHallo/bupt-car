@@ -22,8 +22,7 @@ int btRecieve()
     {
         int message = serialBT.read();
 
-        digitalWrite(PINOUT_BOARD_LED_PIN, !digitalRead(PINOUT_BOARD_LED_PIN));
-        // Serial.println(message); // print on serial monitor
+        flipBoardLed();
         return message;
     }
     return -1;
