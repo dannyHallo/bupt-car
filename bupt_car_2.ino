@@ -5,12 +5,14 @@
 #include "dep/motor.h"
 #include "dep/bluetooth.h"
 #include "dep/commandParser.h"
+#include "dep/naviLine.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
 int trackMidPoint = -1;
 int command = -1;
+naviLine navi = naviLine();
 
 void setup() {
     Serial.begin(115200);
@@ -22,6 +24,7 @@ void setup() {
     pinoutInitAndOpenBTSerialBluetooth();
 
     assignTasks();
+
 }
 
 void assignTasks() {
@@ -71,7 +74,11 @@ void Task2(void* pvParameters) {
         // {
         //     servoLoop(trackMidPoint);
         // }
-        parseCommands(command);
+
+        int direction = navi.getMidLine();
+
+        parseCommands(direction);
+
         vTaskDelay(10);
     }
 }
