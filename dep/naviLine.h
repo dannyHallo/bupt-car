@@ -20,7 +20,7 @@ public:
     int getMidLine() {
         captrueCCD();
         clockCycle++;;
-        if (clockCycle%400==0) {
+        if (clockCycle%20==0) {
             updateLTBrightness();
         }
 
