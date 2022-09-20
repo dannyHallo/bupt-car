@@ -24,6 +24,7 @@ public:
             updateLTBrightness();
         }
 
+        /*
         findLB(MidPixel);
         findRB(MidPixel);
 
@@ -36,13 +37,50 @@ public:
         }
 
         //2. Line in the left
+        lb = MidPixel;
+        while (true) {
+            findLS(lb);
+            rb = ls;
+            findLB(ls);
+            flag = isLine();
+            if (flag==1) {
+                return midLine = (lb+rb)/2;
+            } else if (flag==-1) {
+                return midLine = -1;
+            }
+        }
+        */
 
+        int flag = 0,tmpLine = MidPixel;
+        rs = 0;
+        while (rb<cNumPixels-2) {
+            findRS(rs);
+            lb = rs;
+            findRB(lb);
+            switch (isLine()) {
+            case 1:
+                midLine = (lb+rb)/2;
+                if (abs(MidPixel-midLine)<abs(MidPixel-tmpLine)) {
+                    tmpLine = midLine;
+                } else if (midLine>MidPixel) {
+                    return tmpLine;
+                }
+                break;
+            case 0:
+                flag = flag==-1 ? -1 : 0;
+                break;
+            case -1:
+                return flag = -1;
+                break;
+            }
+            rs = rb;
+        }
 
-        return midLine;
+        return tmpLine;
     }
 
 private:
-    int lb = MidPixel,rb = MidPixel,avgBrightness = 0,LTBrightness = 0,histI = 0;
+    int lb = MidPixel,rb = MidPixel,avgBrightness = 0,LTBrightness = 0,histI = 0,ls,rs;
     int BrightnessHistory[histSize];
     bool Binaries[cNumPixels];
 
@@ -106,18 +144,34 @@ private:
 
     int findLS(int start) {
         int i = start;
-        while (true) {
+        while (i>2) {
             i--;
-            if (i<2) {
-                return lb = 1;
-            } else if (!Binaries[i]) {
+            if (Binaries[i]) {
                 int j = i-1;
-                while (!Binaries[j]) {
+                while (Binaries[j]) {
                     j--;
                     if (j<2) {
-                        return lb = 1;
+                        return ls = 1;
                     } else if (i-j>maxNoiseTorelance) {
-                        return lb = i;
+                        return ls = i;
+                    }
+                }
+            }
+        }
+    }
+
+    int findRS(int start) {
+        int i = start;
+        while (i<cNumPixels-2) {
+            i++;
+            if (Binaries[i]) {
+                int j = i+1;
+                while (Binaries[j]) {
+                    j++;
+                    if (j>cNumPixels-2) {
+                        return rs = cNumPixels-1;
+                    } else if (j-i>maxNoiseTorelance) {
+                        return rs = i;
                     }
                 }
             }
