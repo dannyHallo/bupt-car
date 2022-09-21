@@ -232,11 +232,6 @@ void rawBinaryToOneHot()
         drawOneHot(trackMidPointStore);
 }
 
-int getTrackMidPoint()
-{
-    return trackMidPointStore;
-}
-
 int getBias()
 {
     int midPoint = cNumPixels / 2;
