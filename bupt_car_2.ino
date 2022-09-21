@@ -82,7 +82,8 @@ void Task2(void* pvParameters) {
         // Serial.println(trackMidPoint);
 
         if (trackMidPoint!=-1) {
-            servoLoop(getPID(trackMidPoint));
+            //servoLoop(getPID(trackMidPoint));
+            servoLoop(trackMidPoint);
         }
 
         // int direction = navi.getMidLine();
