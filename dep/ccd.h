@@ -4,15 +4,17 @@
 #include "math.h"
 
 const int cNumPixels = 128;
-const int cEffectiveLineWidth = 18;
-const float cEffectiveLineWidthTolerence = 0.2f;
+const int cEffectiveLineWidth = 22;
+const float cEffectiveLineWidthTolerence = 0.4f;
 const int minWidth = 15,maxWidth = 30;
 uint64_t clockCycle = 0;
+const int deadZone = 15;
 
 int linearPixelsData[cNumPixels]{};
 bool binaryPixelsRawData[cNumPixels]{};
 bool binaryPixelsOneHotData[cNumPixels]{};
 int trackMidPointStore = -1;
+
 
 void pinoutInitCCD() {
     pinMode(PINOUT_CCD_SI,OUTPUT);
@@ -43,6 +45,10 @@ void captrueCCD() {
         delayMicroseconds(1);
         digitalWrite(PINOUT_CCD_CLK,HIGH);
         // Serial.printf("%d ",linearPixelsData[i]);
+    }
+
+    for (int i = 0;i<deadZone;i++) {
+        linearPixelsData[i] = 0;
     }
 }
 
