@@ -6,6 +6,7 @@
 #include "dep/bluetooth.h"
 #include "dep/commandParser.h"
 #include "dep/naviLine.h"
+#include "dep/pid.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
@@ -81,7 +82,7 @@ void Task2(void* pvParameters) {
         // Serial.println(trackMidPoint);
 
         if (trackMidPoint!=-1) {
-            servoLoop(trackMidPoint);
+            servoLoop(getPID(trackMidPoint));
         }
 
         // int direction = navi.getMidLine();
