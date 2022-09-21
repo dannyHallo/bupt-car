@@ -7,7 +7,7 @@ const int cNumPixels = 128;
 
 const int cEffectiveLineWidth = 22;
 const float cEffectiveLineWidthTolerence = 0.4f;
-const int minWidth = 15, maxWidth = 30;
+const int minWidth = 15,maxWidth = 30;
 
 uint64_t clockCycle = 0;
 const int deadZone = 15;
@@ -17,126 +17,110 @@ bool binaryPixelsRawData[cNumPixels]{};
 bool binaryPixelsOneHotData[cNumPixels]{};
 int trackMidPointStore = -1;
 
-void pinoutInitCCD()
-{
-    pinMode(PINOUT_CCD_SI, OUTPUT);
-    pinMode(PINOUT_CCD_CLK, OUTPUT);
-    pinMode(PINOUT_CCD_AO, INPUT);
+void pinoutInitCCD() {
+    pinMode(PINOUT_CCD_SI,OUTPUT);
+    pinMode(PINOUT_CCD_CLK,OUTPUT);
+    pinMode(PINOUT_CCD_AO,INPUT);
 
-    digitalWrite(PINOUT_CCD_SI, LOW);  // IDLE state
-    digitalWrite(PINOUT_CCD_CLK, LOW); // IDLE state
+    digitalWrite(PINOUT_CCD_SI,LOW);  // IDLE state
+    digitalWrite(PINOUT_CCD_CLK,LOW); // IDLE state
 }
 
-void captrueCCD(int explosureTimeMs)
-{
+void captrueCCD(int explosureTimeMs) {
     // delayMicroseconds(1);
 
-    digitalWrite(PINOUT_CCD_CLK, LOW);
+    digitalWrite(PINOUT_CCD_CLK,LOW);
     delayMicroseconds(1);
-    digitalWrite(PINOUT_CCD_SI, HIGH);
-    delayMicroseconds(1);
-
-    digitalWrite(PINOUT_CCD_CLK, HIGH);
-    delayMicroseconds(1);
-    digitalWrite(PINOUT_CCD_SI, LOW);
+    digitalWrite(PINOUT_CCD_SI,HIGH);
     delayMicroseconds(1);
 
-    digitalWrite(PINOUT_CCD_CLK, LOW);
+    digitalWrite(PINOUT_CCD_CLK,HIGH);
+    delayMicroseconds(1);
+    digitalWrite(PINOUT_CCD_SI,LOW);
+    delayMicroseconds(1);
+
+    digitalWrite(PINOUT_CCD_CLK,LOW);
     delayMicroseconds(2);
 
     /* and now read the real image */
 
-    for (int i = 0; i < cNumPixels; i++)
-    {
-        digitalWrite(PINOUT_CCD_CLK, HIGH);
+    for (int i = 0; i<cNumPixels; i++) {
+        digitalWrite(PINOUT_CCD_CLK,HIGH);
 
         delayMicroseconds(2);
         linearPixelsData[i] = analogRead(PINOUT_CCD_AO); // 8-bit is enough
-        digitalWrite(PINOUT_CCD_CLK, LOW);
+        digitalWrite(PINOUT_CCD_CLK,LOW);
         delayMicroseconds(2);
     }
 
-    digitalWrite(PINOUT_CCD_CLK, HIGH);
+    digitalWrite(PINOUT_CCD_CLK,HIGH);
     delayMicroseconds(2);
 
-    for (int t = 0; t < explosureTimeMs * 250; t++)
-    {
-        digitalWrite(PINOUT_CCD_CLK, LOW);
+    for (int t = 0; t<explosureTimeMs*250; t++) {
+        digitalWrite(PINOUT_CCD_CLK,LOW);
         delayMicroseconds(2);
 
-        digitalWrite(PINOUT_CCD_CLK, HIGH);
+        digitalWrite(PINOUT_CCD_CLK,HIGH);
         delayMicroseconds(2);
-    }
-
-    for (int i = 0; i < deadZone; i++)
-    {
-        linearPixelsData[i] = 0;
     }
 }
 
-void printCCDLinearData(int maxVal)
-{
-    for (int i = 0; i < cNumPixels; i++)
-    {
-        int t = floor(float(linearPixelsData[i]) / float(maxVal) * 10.0f - 0.1f);
-        Serial.print(char(48 + t));
+void printCCDLinearData(int maxVal) {
+    for (int i = 0; i<cNumPixels; i++) {
+        int t = floor(float(linearPixelsData[i])/float(maxVal)*10.0f-0.1f);
+        Serial.print(char(48+t));
     }
     Serial.println();
 }
 
-void printCCDBinaryRawData()
-{
-    for (int i = 0; i < cNumPixels; i++)
-    {
+void printCCDBinaryRawData() {
+    for (int i = 0; i<cNumPixels; i++) {
         char c = binaryPixelsRawData[i] ? 'x' : '-';
         Serial.print(c);
     }
     Serial.println();
 }
 
-void printCCDOneHotData()
-{
-    for (int i = 0; i < cNumPixels; i++)
-    {
+void printCCDOneHotData() {
+    for (int i = 0; i<cNumPixels; i++) {
         char c = binaryPixelsOneHotData[i] ? '^' : ' ';
         Serial.print(c);
     }
     Serial.println();
 }
 
-void linearToRawBinary(int &minVal, int &maxVal, int &avgVal)
-{
+void linearToRawBinary(int& minVal,int& maxVal,int& avgVal) {
     maxVal = 0;
     minVal = 1e6;
 
     int totalVal = 0;
 
-    for (int i = 0; i < cNumPixels; i++)
-    {
+    for (int i = 0; i<cNumPixels; i++) {
         int currentVal = linearPixelsData[i];
 
-        if (maxVal < currentVal)
+        if (maxVal<currentVal)
             maxVal = currentVal;
-        if (minVal > currentVal)
+        if (minVal>currentVal)
             minVal = currentVal;
 
         totalVal += currentVal;
     }
 
-    avgVal = customRound(float(minVal + maxVal) / 2.0f);
+    avgVal = customRound(float(minVal+maxVal)/2.0f);
 
-    for (int i = 0; i < cNumPixels; i++)
-    {
-        binaryPixelsRawData[i] = (linearPixelsData[i] < avgVal) ? true : false;
+
+    for (int i = 0; i<deadZone; i++) {
+        linearPixelsData[i] = 0;
+    }
+
+    for (int i = deadZone; i<cNumPixels; i++) {
+        binaryPixelsRawData[i] = (linearPixelsData[i]<avgVal) ? true : false;
     }
 }
 
-void drawOneHot(int point)
-{
-    for (int i = 0; i < cNumPixels; i++)
-    {
-        if (i == point)
-        {
+void drawOneHot(int point) {
+    for (int i = 0; i<cNumPixels; i++) {
+        if (i==point) {
             binaryPixelsOneHotData[i] = true;
             continue;
         }
@@ -144,36 +128,30 @@ void drawOneHot(int point)
     }
 }
 
-bool getMidPoint(int fromPixel, int &trackMidPixel, int &trackEndPixel)
-{
+bool getMidPoint(int fromPixel,int& trackMidPixel,int& trackEndPixel) {
     int accumulatedDarkPixel = 0;
 
     int trackLeftPixel = -1;
     int trackRightPixel = -1;
     int trackMidPixelTmp = -1;
 
-    for (int i = fromPixel; i < cNumPixels; i++)
-    {
+    for (int i = fromPixel; i<cNumPixels; i++) {
         bool currentPixel = binaryPixelsRawData[i];
 
         // Dark pixel
-        if (currentPixel == true)
-        {
-            if (trackLeftPixel == -1)
-            {
+        if (currentPixel==true) {
+            if (trackLeftPixel==-1) {
                 trackLeftPixel = i;
             }
             accumulatedDarkPixel++;
         }
 
         // White pixel
-        else
-        {
+        else {
             if (
-                accumulatedDarkPixel >= customRound(cEffectiveLineWidth * (1 - cEffectiveLineWidthTolerence)) &&
-                accumulatedDarkPixel <= customRound(cEffectiveLineWidth * (1 + cEffectiveLineWidthTolerence)))
-            {
-                trackRightPixel = i - 1;
+                accumulatedDarkPixel>=customRound(cEffectiveLineWidth*(1-cEffectiveLineWidthTolerence))&&
+                accumulatedDarkPixel<=customRound(cEffectiveLineWidth*(1+cEffectiveLineWidthTolerence))) {
+                trackRightPixel = i-1;
                 break;
             }
 
@@ -183,77 +161,66 @@ bool getMidPoint(int fromPixel, int &trackMidPixel, int &trackEndPixel)
     }
 
     // Parse invalid, retain last array
-    if (trackLeftPixel == -1 || trackRightPixel == -1)
+    if (trackLeftPixel==-1||trackRightPixel==-1)
         return false;
 
     // Get mid point
-    if ((trackRightPixel - trackLeftPixel) % 2 == 0)
-    {
-        trackMidPixelTmp = customRound((trackRightPixel + trackLeftPixel) / 2.0f);
-    }
-    else
-    {
-        int trackMidPixelCandidate1 = customRound((trackRightPixel + trackLeftPixel - 1) / 2.0f);
-        int trackMidPixelCandidate2 = trackMidPixelCandidate1 + 1;
+    if ((trackRightPixel-trackLeftPixel)%2==0) {
+        trackMidPixelTmp = customRound((trackRightPixel+trackLeftPixel)/2.0f);
+    } else {
+        int trackMidPixelCandidate1 = customRound((trackRightPixel+trackLeftPixel-1)/2.0f);
+        int trackMidPixelCandidate2 = trackMidPixelCandidate1+1;
 
         trackMidPixelTmp =
-            (linearPixelsData[trackMidPixelCandidate1] <
-             linearPixelsData[trackMidPixelCandidate2])
-                ? trackMidPixelCandidate1
-                : trackMidPixelCandidate2;
+            (linearPixelsData[trackMidPixelCandidate1]<
+                linearPixelsData[trackMidPixelCandidate2])
+            ? trackMidPixelCandidate1
+            : trackMidPixelCandidate2;
     }
 
     trackMidPixel = trackMidPixelTmp;
-    trackEndPixel = trackRightPixel + 1;
+    trackEndPixel = trackRightPixel+1;
     return true;
 }
 
-bool formerOneIsCloserToCenter(int a, int b)
-{
-    int midPoint = customRound(cNumPixels / 2.0f);
+bool formerOneIsCloserToCenter(int a,int b) {
+    int midPoint = customRound(cNumPixels/2.0f);
 
-    return abs(a - midPoint) < abs(b - midPoint);
+    return abs(a-midPoint)<abs(b-midPoint);
 }
 
-void rawBinaryToOneHot()
-{
+void rawBinaryToOneHot() {
     int trackMidPixelTmp = -1;
     int trackMidPixel = 0;
     int trackEndPixel = 0;
 
-    while (getMidPoint(trackEndPixel, trackMidPixel, trackEndPixel))
-    {
-        if (formerOneIsCloserToCenter(trackMidPixel, trackMidPixelTmp))
+    while (getMidPoint(trackEndPixel,trackMidPixel,trackEndPixel)) {
+        if (formerOneIsCloserToCenter(trackMidPixel,trackMidPixelTmp))
             trackMidPixelTmp = trackMidPixel;
     }
 
     trackMidPointStore = trackMidPixelTmp;
 
-    if (trackMidPointStore != -1)
+    if (trackMidPointStore!=-1)
         drawOneHot(trackMidPointStore);
 }
 
-int getTrackMidPoint()
-{
+int getTrackMidPoint() {
     return trackMidPointStore;
 }
 
-int getBias()
-{
-    int midPoint = cNumPixels / 2;
+int getBias() {
+    int midPoint = cNumPixels/2;
     int bias = 0;
-    for (int i = 0; i < cNumPixels; i++)
-    {
-        if (binaryPixelsRawData[i])
-        {
-            bias += (i - midPoint);
+    for (int i = 0; i<cNumPixels; i++) {
+        if (binaryPixelsRawData[i]) {
+            bias += (i-midPoint);
         }
     }
-    return bias / 8;
+    return bias/8;
 }
 
-int processCCD()
-{
+int processCCD() {
     int minVal = 0;
     int maxVal = 0;
     int avgVal = 0;
@@ -262,7 +229,7 @@ int processCCD()
     captrueCCD(20);
 
     // Process
-    linearToRawBinary(minVal, maxVal, avgVal);
+    linearToRawBinary(minVal,maxVal,avgVal);
     // rawBinaryToOneHot();
 
     Serial.println(maxVal);
