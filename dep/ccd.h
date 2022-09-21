@@ -4,10 +4,13 @@
 #include "math.h"
 
 const int cNumPixels = 128;
-const int cEffectiveLineWidth = 18;
-const float cEffectiveLineWidthTolerence = 0.2f;
+
+const int cEffectiveLineWidth = 22;
+const float cEffectiveLineWidthTolerence = 0.4f;
 const int minWidth = 15, maxWidth = 30;
+
 uint64_t clockCycle = 0;
+const int deadZone = 15;
 
 int linearPixelsData[cNumPixels]{};
 bool binaryPixelsRawData[cNumPixels]{};
@@ -63,6 +66,11 @@ void captrueCCD(int explosureTimeMs)
 
         digitalWrite(PINOUT_CCD_CLK, HIGH);
         delayMicroseconds(2);
+    }
+
+    for (int i = 0; i < deadZone; i++)
+    {
+        linearPixelsData[i] = 0;
     }
 }
 
@@ -265,14 +273,11 @@ int processCCD()
     printCCDOneHotData();
 
     // Return
-<<<<<<< Updated upstream
     return getTrackMidPoint();
     // getTrackMidPoint();
     // return getBias();
-=======
     // return getTrackMidPoint();
     getTrackMidPoint();
     return getBias();
->>>>>>> Stashed changes
     // return -1;
 }
