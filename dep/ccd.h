@@ -4,10 +4,18 @@
 #include "math.h"
 
 const int cNumPixels = 128;
+const int cCountStart = 15;
+const int cCountEnd = 127;
 
+<<<<<<< Updated upstream
 const int cEffectiveLineWidth = 22;
 const float cEffectiveLineWidthTolerence = 0.4f;
 const int minWidth = 15,maxWidth = 30;
+=======
+const int cEffectiveLineWidthMin = 10;
+const int cEffectiveLineWidthMax = 30;
+const int minWidth = 15, maxWidth = 30;
+>>>>>>> Stashed changes
 
 uint64_t clockCycle = 0;
 const int deadZone = 15;
@@ -26,7 +34,12 @@ void pinoutInitCCD() {
     digitalWrite(PINOUT_CCD_CLK,LOW); // IDLE state
 }
 
+<<<<<<< Updated upstream
 void captrueCCD(int explosureTimeMs) {
+=======
+void captrueCCD(int explosureTimeMs = 20)
+{
+>>>>>>> Stashed changes
     // delayMicroseconds(1);
 
     digitalWrite(PINOUT_CCD_CLK,LOW);
@@ -93,18 +106,22 @@ void linearToRawBinary(int& minVal,int& maxVal,int& avgVal) {
     maxVal = 0;
     minVal = 1e6;
 
+<<<<<<< Updated upstream
     int totalVal = 0;
 
     for (int i = 0; i<cNumPixels; i++) {
+=======
+    for (int i = cCountStart; i < cCountEnd; i++)
+    {
+>>>>>>> Stashed changes
         int currentVal = linearPixelsData[i];
 
         if (maxVal<currentVal)
             maxVal = currentVal;
         if (minVal>currentVal)
             minVal = currentVal;
-
-        totalVal += currentVal;
     }
+<<<<<<< Updated upstream
 
     avgVal = customRound(float(minVal+maxVal)/2.0f);
 
@@ -115,6 +132,13 @@ void linearToRawBinary(int& minVal,int& maxVal,int& avgVal) {
 
     for (int i = deadZone; i<cNumPixels; i++) {
         binaryPixelsRawData[i] = (linearPixelsData[i]<avgVal) ? true : false;
+=======
+    avgVal = customRound(float(minVal + maxVal) / 2.0f);
+
+    for (int i = cCountStart; i < cCountEnd; i++)
+    {
+        binaryPixelsRawData[i] = (linearPixelsData[i] < avgVal) ? true : false;
+>>>>>>> Stashed changes
     }
 }
 
@@ -135,7 +159,12 @@ bool getMidPoint(int fromPixel,int& trackMidPixel,int& trackEndPixel) {
     int trackRightPixel = -1;
     int trackMidPixelTmp = -1;
 
+<<<<<<< Updated upstream
     for (int i = fromPixel; i<cNumPixels; i++) {
+=======
+    for (int i = fromPixel; i < cCountEnd; i++)
+    {
+>>>>>>> Stashed changes
         bool currentPixel = binaryPixelsRawData[i];
 
         // Dark pixel
@@ -147,11 +176,20 @@ bool getMidPoint(int fromPixel,int& trackMidPixel,int& trackEndPixel) {
         }
 
         // White pixel
+<<<<<<< Updated upstream
         else {
             if (
                 accumulatedDarkPixel>=customRound(cEffectiveLineWidth*(1-cEffectiveLineWidthTolerence))&&
                 accumulatedDarkPixel<=customRound(cEffectiveLineWidth*(1+cEffectiveLineWidthTolerence))) {
                 trackRightPixel = i-1;
+=======
+        else
+        {
+            if (accumulatedDarkPixel >= customRound(cEffectiveLineWidthMin) &&
+                accumulatedDarkPixel <= customRound(cEffectiveLineWidthMax))
+            {
+                trackRightPixel = i - 1;
+>>>>>>> Stashed changes
                 break;
             }
 
@@ -183,8 +221,14 @@ bool getMidPoint(int fromPixel,int& trackMidPixel,int& trackEndPixel) {
     return true;
 }
 
+<<<<<<< Updated upstream
 bool formerOneIsCloserToCenter(int a,int b) {
     int midPoint = customRound(cNumPixels/2.0f);
+=======
+bool formerOneIsCloserToCenter(int a, int b)
+{
+    int midPoint = customRound((cCountEnd - cCountStart) / 2.0f);
+>>>>>>> Stashed changes
 
     return abs(a-midPoint)<abs(b-midPoint);
 }
@@ -192,7 +236,7 @@ bool formerOneIsCloserToCenter(int a,int b) {
 void rawBinaryToOneHot() {
     int trackMidPixelTmp = -1;
     int trackMidPixel = 0;
-    int trackEndPixel = 0;
+    int trackEndPixel = cCountStart;
 
     while (getMidPoint(trackEndPixel,trackMidPixel,trackEndPixel)) {
         if (formerOneIsCloserToCenter(trackMidPixel,trackMidPixelTmp))
@@ -205,6 +249,7 @@ void rawBinaryToOneHot() {
         drawOneHot(trackMidPointStore);
 }
 
+<<<<<<< Updated upstream
 int getTrackMidPoint() {
     return trackMidPointStore;
 }
@@ -219,6 +264,26 @@ int getBias() {
     }
     return bias/8;
 }
+=======
+int getTrackMidPoint()
+{
+    return customRound(map(float(trackMidPointStore), float(cCountStart), float(cCountEnd), 0.0f, 128.0f));
+}
+
+// int getBias()
+// {
+//     int midPoint = cNumPixels / 2;
+//     int bias = 0;
+//     for (int i = 0; i < cNumPixels; i++)
+//     {
+//         if (binaryPixelsRawData[i])
+//         {
+//             bias += (i - midPoint);
+//         }
+//     }
+//     return bias / 8;
+// }
+>>>>>>> Stashed changes
 
 int processCCD() {
     int minVal = 0;
@@ -229,22 +294,22 @@ int processCCD() {
     captrueCCD(20);
 
     // Process
+<<<<<<< Updated upstream
     linearToRawBinary(minVal,maxVal,avgVal);
     // rawBinaryToOneHot();
 
     Serial.println(maxVal);
+=======
+    linearToRawBinary(minVal, maxVal, avgVal);
+    rawBinaryToOneHot();
+>>>>>>> Stashed changes
 
     // Debug
     printCCDLinearData(maxVal);
-    // printCCDBinaryRawData();
+    printCCDBinaryRawData();
     printCCDOneHotData();
 
     // Return
     return getTrackMidPoint();
-    // getTrackMidPoint();
     // return getBias();
-    // return getTrackMidPoint();
-    getTrackMidPoint();
-    return getBias();
-    // return -1;
 }
