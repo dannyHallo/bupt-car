@@ -211,13 +211,13 @@ int processCCD() {
     // Serial.println(maxVal);
 
     // Debug
-    // printCCDLinearData(maxVal);
+    printCCDLinearData(maxVal);
     // printCCDBinaryRawData();
-    // printCCDOneHotData();
+    printCCDOneHotData();
 
     // Return
-    //return getTrackMidPoint();
-    getTrackMidPoint();
-    return getBias();
+    return getTrackMidPoint();
+    // getTrackMidPoint();
+    // return getBias();
     // return -1;
 }

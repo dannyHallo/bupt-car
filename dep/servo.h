@@ -26,5 +26,5 @@ void servoWriteAngle(float angle) {
 }
 
 void servoLoop(int trackMidPoint) {
-    servoWriteAngle(map(float(softmax(trackMidPoint)),0.0f,128.0f,-cAngleLimit,cAngleLimit));
+    servoWriteAngle(map(float(trackMidPoint),0.0f,128.0f,-cAngleLimit,cAngleLimit));
 }

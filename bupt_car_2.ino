@@ -25,6 +25,9 @@ void setup() {
 
     assignTasks();
 
+    navi.initNaviLine();
+
+    Serial.printf("Clocck cycle: %lld\n",clockCycle);
 }
 
 void assignTasks() {
@@ -50,7 +53,13 @@ void assignTasks() {
 }
 
 // This loop is automatically assigned to Core 1, so block it manually
-void loop() { delay(1000); }
+void loop() {
+    //Serial.printf("Clocck cycle: %lld",clockCycle);
+    delay(1000);
+    // navi.printBinarizedPixels();
+    // navi.printLTBrightness();
+    // navi.printLinearPixels();
+}
 
 void Task1(void* pvParameters) {
     for (;;) {
@@ -65,20 +74,21 @@ void Task1(void* pvParameters) {
 
 void Task2(void* pvParameters) {
     for (;;) {
+        //Serial.printf("Clocck cycle: %lld\n",clockCycle);
         // motorLoop();
 
-        // trackMidPoint = processCCD();
+        trackMidPoint = processCCD();
         // Serial.println(trackMidPoint);
 
-        // if (trackMidPoint != -1)
-        // {
-        //     servoLoop(trackMidPoint);
-        // }
+        if (trackMidPoint!=-1) {
+            servoLoop(trackMidPoint);
+        }
 
-        int direction = navi.getMidLine();
+        // int direction = navi.getMidLine();
 
-        parseCommands(direction);
+        // servoWriteAngle(scaleAngle(direction,0,45,1000));
+        // Serial.printf("Direction: %d\n",direction);
 
-        vTaskDelay(10);
+        // vTaskDelay(5);
     }
 }

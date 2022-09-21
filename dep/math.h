@@ -35,8 +35,10 @@ inline T map(T& val,T valMin,T valMax,T outMin,T outMax) {
     return val;
 }
 
-inline float softmax(float val) {
-    val = (val-64.0f)/12.0f;
-    val = (128.0f/(1.0f+exp(-float(val))));
-    return val;
+// inline float softmax(float val,float mid,float scale,float origmax) {
+//     return 1.0f/(1.0f+exp(-scale*(val-mid)));
+// }
+
+inline float scaleAngle(float val,float mid,float scale,float origmax) {
+    return scale*(val-mid)/origmax;
 }
