@@ -1,4 +1,5 @@
 {
+  "C_Cpp.clang_format_fallbackStyle": "{BasedOnStyle: LLVM, AlignConsecutiveAssignments: Consecutive, PointerAlignment: Left, ColumnLimit: 100}",
   "files.associations": {
     "functional": "cpp",
     "map": "cpp",
