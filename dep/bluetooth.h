@@ -18,7 +18,7 @@ int btRecieve() {
   if (serialBT.available()) {
     int message = serialBT.read();
 
-    flipBoardLed();
+    // flipBoardLed();
     return message;
   }
   return -1;

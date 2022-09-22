@@ -11,8 +11,7 @@
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
-int trackMidPoint = -1;
-int command       = -1;
+int command = -1;
 // naviLine navi     = naviLine();
 
 void setup() {
@@ -26,9 +25,9 @@ void setup() {
 
   assignTasks();
 
-//   navi.initNaviLine();
+  //   navi.initNaviLine();
 
-  Serial.printf("Clocck cycle: %lld\n", clockCycle);
+  //   Serial.printf("Clocck cycle: %lld\n", clockCycle);
 }
 
 void assignTasks() {
@@ -71,24 +70,30 @@ void Task1(void* pvParameters) {
   }
 }
 
+int lastValidMidPixel = -1;
+
 void Task2(void* pvParameters) {
   for (;;) {
-    // Serial.printf("Clocck cycle: %lld\n",clockCycle);
-    //  motorLoop();
 
-    trackMidPoint = processCCD();
-    // Serial.println(trackMidPoint);
+    int trackMidPixel = -1;
+    bool isNormal     = false;
+    processCCD(trackMidPixel, isNormal);
 
-    if (trackMidPoint != -1) {
-      // servoLoop(getPID(trackMidPoint));
-      servoLoop(trackMidPoint);
+    if (isNormal) {
+      boardLedOff();
+      servoWritePixel(trackMidPixel);
+      lastValidMidPixel = trackMidPixel;
+      motorForward();
+    } else {
+      boardLedOn();
+
+      // Reverse
+    //   servoWritePixel(128 - lastValidMidPixel);
+      servoWritePixel(128 - lastValidMidPixel);
+      motorBackward();
     }
 
     // int direction = navi.getMidLine();
-
-    // servoWriteAngle(scaleAngle(direction,0,45,1000));
-    // Serial.printf("Direction: %d\n",direction);
-
     // vTaskDelay(5);
   }
 }
