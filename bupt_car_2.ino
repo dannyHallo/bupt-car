@@ -92,16 +92,16 @@ void Task2(void* pvParameters) {
       // servoWritePixel(128 - lastValidMidPixel);
       // motorBackward();
       if (lastValidMidPixel<64) {
-        servoWritePixel(0);
-      } else {
         servoWritePixel(127);
+      } else {
+        servoWritePixel(0);
       }
       motorBackward();
       vTaskDelay(200);
       if (lastValidMidPixel<64) {
-        servoWritePixel(127);
-      } else {
         servoWritePixel(0);
+      } else {
+        servoWritePixel(127);
       }
       motorForward();
       vTaskDelay(200);
