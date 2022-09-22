@@ -81,9 +81,13 @@ void Task2(void* pvParameters) {
 
     if (isNormal) {
       boardLedOff();
-      servoWritePixel(trackMidPixel);
-      lastValidMidPixel = trackMidPixel;
-      motorForward();
+      lastValidMidPixel = getPID(trackMidPixel);
+      servoWritePixel(lastValidMidPixel);
+      if (abs(lastValidMidPixel-64)<24) {
+        motorForward();
+      } else {
+        motorForwardTurn();
+      }
     } else {
       boardLedOn();
 
@@ -97,14 +101,6 @@ void Task2(void* pvParameters) {
         servoWritePixel(0);
       }
       motorBackward();
-      vTaskDelay(200);
-      if (lastValidMidPixel<64) {
-        servoWritePixel(0);
-      } else {
-        servoWritePixel(127);
-      }
-      motorForward();
-      vTaskDelay(200);
 
       // int direction = navi.getMidLine();
       // vTaskDelay(5);
