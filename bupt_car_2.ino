@@ -32,21 +32,21 @@ void setup() {
 
 void assignTasks() {
   xTaskCreatePinnedToCore(Task1,        // Task function
-                          "Task1",      // Task name
-                          2000,         // Stack size
-                          NULL,         // Parameter
-                          1,            // Priority
-                          &Task1Handle, // Task handle to keep track of created task
-                          0             // Core ID: 0:
+    "Task1",      // Task name
+    2000,         // Stack size
+    NULL,         // Parameter
+    1,            // Priority
+    &Task1Handle, // Task handle to keep track of created task
+    0             // Core ID: 0:
   );
 
   xTaskCreatePinnedToCore(Task2,        // Task function
-                          "Task2",      // Task name
-                          2000,         // Stack size
-                          NULL,         // Parameter
-                          1,            // Priority
-                          &Task2Handle, // Task handle to keep track of created task
-                          1             // Core ID: 0:
+    "Task2",      // Task name
+    2000,         // Stack size
+    NULL,         // Parameter
+    1,            // Priority
+    &Task2Handle, // Task handle to keep track of created task
+    1             // Core ID: 0:
   );
 }
 
@@ -76,8 +76,8 @@ void Task2(void* pvParameters) {
   for (;;) {
 
     int trackMidPixel = -1;
-    bool isNormal     = false;
-    processCCD(trackMidPixel, isNormal);
+    bool isNormal = false;
+    processCCD(trackMidPixel,isNormal);
 
     if (isNormal) {
       boardLedOff();
@@ -89,11 +89,24 @@ void Task2(void* pvParameters) {
 
       // Reverse
     //   servoWritePixel(128 - lastValidMidPixel);
-      servoWritePixel(128 - lastValidMidPixel);
+      // servoWritePixel(128 - lastValidMidPixel);
+      // motorBackward();
+      if (lastValidMidPixel<64) {
+        servoWritePixel(0);
+      } else {
+        servoWritePixel(127);
+      }
       motorBackward();
-    }
+      vTaskDelay(200);
+      if (lastValidMidPixel<64) {
+        servoWritePixel(127);
+      } else {
+        servoWritePixel(0);
+      }
+      motorForward();
+      vTaskDelay(200);
 
-    // int direction = navi.getMidLine();
-    // vTaskDelay(5);
+      // int direction = navi.getMidLine();
+      // vTaskDelay(5);
+    }
   }
-}
