@@ -110,3 +110,4 @@ void Task2(void* pvParameters) {
       // vTaskDelay(5);
     }
   }
+}
