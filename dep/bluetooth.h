@@ -17,8 +17,6 @@ void btSend(int message) { serialBT.write(message); }
 int btRecieve() {
   if (serialBT.available()) {
     int message = serialBT.read();
-
-    // flipBoardLed();
     return message;
   }
   return -1;

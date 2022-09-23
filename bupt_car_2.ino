@@ -1,9 +1,9 @@
 #include "dep/bluetooth.h"
-#include "dep/oled.h"
 #include "dep/boardLed.h"
 #include "dep/ccd.h"
 #include "dep/commandParser.h"
 #include "dep/motor.h"
+#include "dep/oled.h"
 // #include "dep/naviLine.h"
 #include "dep/pid.h"
 #include "dep/pinouts.h"
@@ -24,7 +24,7 @@ void setup() {
   pinoutAndPwmChannelInitMotor();
   pinoutInitAndOpenBTSerialBluetooth();
   pinoutInitAndI2cConfigOled();
-  
+
   assignTasks();
 
   //   navi.initNaviLine();
@@ -76,36 +76,39 @@ int lastValidMidPixel = -1;
 
 void Task2(void* pvParameters) {
   for (;;) {
+    display.clearDisplay();
 
-    int trackMidPixel = -1;
+    int trackMidPixel = 0;
+    float darkRatio   = 0;
     bool isNormal     = false;
-    processCCD(trackMidPixel, isNormal);
+    processCCD(trackMidPixel, darkRatio, isNormal);
+
+    oledPrint(darkRatio, "d/l", 2);
 
     if (isNormal) {
       boardLedOff();
-      lastValidMidPixel = getPID(trackMidPixel);
+      lastValidMidPixel = getPID(trackMidPixel - 64);
+      lastValidMidPixel += 64;
       servoWritePixel(lastValidMidPixel);
-      if (abs(lastValidMidPixel - 64) < 24) {
-        motorForward();
-      } else {
-        motorForwardTurn();
-      }
+      oledPrint(lastValidMidPixel, "out pix", 0);
+
+      oledPrint("isNormal: true", 1);
+
+      motorForward();
     } else {
       boardLedOn();
 
       // Reverse
-      //   servoWritePixel(128 - lastValidMidPixel);
-      // servoWritePixel(128 - lastValidMidPixel);
-      // motorBackward();
-      if (lastValidMidPixel < 64) {
+      if (lastValidMidPixel < 64)
         servoWritePixel(127);
-      } else {
+      else
         servoWritePixel(0);
-      }
-      motorBackward();
 
-      // int direction = navi.getMidLine();
-      // vTaskDelay(5);
+      oledPrint("isNormal: false", 1);
+
+      motorBackward();
     }
+
+    oledFlush();
   }
 }
