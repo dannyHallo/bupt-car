@@ -4,7 +4,7 @@
 #include "pinouts.h"
 
 const int cMotorResolution = 16; // Max: 16 bit
-const int cMinimumPower = 32000;
+const int cMinimumPower = 26000;
 const int cMinimumPowerForTurn = 20000;
 const int cMaximumPower = 65535;
 

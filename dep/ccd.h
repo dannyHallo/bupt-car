@@ -19,7 +19,7 @@ const float cDarkRatioEnd = 1.0f;
 
 float minDarkRatio = 1.0f;
 const float cAbnormalDarkRatioDelta = 0.2f;
-const float cAbnormalDarkRatio = 0.5f;
+const float cAbnormalDarkRatio = 0.85f;
 
 int linearData[cNumPixels]{};
 bool binaryData[cNumPixels]{};
