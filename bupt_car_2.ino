@@ -87,27 +87,28 @@ void Task2(void* pvParameters) {
 
     if (isNormal) {
       boardLedOff();
-      lastValidMidPixel = getPID(trackMidPixel - 64);
-      lastValidMidPixel += 64;
-      servoWritePixel(lastValidMidPixel);
-      oledPrint(lastValidMidPixel, "out pix", 0);
 
-      oledPrint("isNormal: true", 1);
-
-      motorForward();
+      // motorForward();
     } else {
       boardLedOn();
 
-      // Reverse
-      if (lastValidMidPixel < 64)
-        servoWritePixel(127);
-      else
-        servoWritePixel(0);
+      // // Reverse
+      // if (lastValidMidPixel < 64)
+      //   servoWritePixel(0);
+      // else
+      //   servoWritePixel(127);
 
-      oledPrint("isNormal: false", 1);
+      // oledPrint("isNormal: false", 1);
 
-      motorBackward();
+      // motorForward();
+      // motorBackward();
     }
+    lastValidMidPixel = getPID(trackMidPixel - 64);
+    lastValidMidPixel += 64;
+    servoWritePixel(lastValidMidPixel);
+    oledPrint(lastValidMidPixel, "out pix", 0);
+
+    oledPrint("isNormal: true", 1);
 
     oledFlush();
   }

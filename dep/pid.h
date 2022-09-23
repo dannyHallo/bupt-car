@@ -1,11 +1,13 @@
 #pragma once
 
-float Kp = 0.4f, Ki = 0.2f, Kd = 0;
+float Kp = 0.6f, Ki = 0.6f, Kd = 0;
+// float Kp = 1.0f, Ki = 0.0f, Kd = 0;
 float P = 0, I = 0, D = 0, PID_value = 0, error = 0;
 float previous_error = 0, previous_I = 0;
+float errorTolerance = 10.0f;
 
 int getPID(float error) {
-  if (previous_error > 0 && error < 0 || previous_error < 0 && error > 0) {
+  if (abs(error) < errorTolerance) {
     I = 0;
   }
 
