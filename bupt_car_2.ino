@@ -1,4 +1,5 @@
 #include "dep/bluetooth.h"
+#include "dep/oled.h"
 #include "dep/boardLed.h"
 #include "dep/ccd.h"
 #include "dep/commandParser.h"
@@ -22,7 +23,8 @@ void setup() {
   pinoutAndPwmChannelInitServo();
   pinoutAndPwmChannelInitMotor();
   pinoutInitAndOpenBTSerialBluetooth();
-
+  pinoutInitAndI2cConfigOled();
+  
   assignTasks();
 
   //   navi.initNaviLine();
@@ -32,21 +34,21 @@ void setup() {
 
 void assignTasks() {
   xTaskCreatePinnedToCore(Task1,        // Task function
-    "Task1",      // Task name
-    2000,         // Stack size
-    NULL,         // Parameter
-    1,            // Priority
-    &Task1Handle, // Task handle to keep track of created task
-    0             // Core ID: 0:
+                          "Task1",      // Task name
+                          2000,         // Stack size
+                          NULL,         // Parameter
+                          1,            // Priority
+                          &Task1Handle, // Task handle to keep track of created task
+                          0             // Core ID: 0:
   );
 
   xTaskCreatePinnedToCore(Task2,        // Task function
-    "Task2",      // Task name
-    2000,         // Stack size
-    NULL,         // Parameter
-    1,            // Priority
-    &Task2Handle, // Task handle to keep track of created task
-    1             // Core ID: 0:
+                          "Task2",      // Task name
+                          2000,         // Stack size
+                          NULL,         // Parameter
+                          1,            // Priority
+                          &Task2Handle, // Task handle to keep track of created task
+                          1             // Core ID: 0:
   );
 }
 
@@ -76,14 +78,14 @@ void Task2(void* pvParameters) {
   for (;;) {
 
     int trackMidPixel = -1;
-    bool isNormal = false;
-    processCCD(trackMidPixel,isNormal);
+    bool isNormal     = false;
+    processCCD(trackMidPixel, isNormal);
 
     if (isNormal) {
       boardLedOff();
       lastValidMidPixel = getPID(trackMidPixel);
       servoWritePixel(lastValidMidPixel);
-      if (abs(lastValidMidPixel-64)<24) {
+      if (abs(lastValidMidPixel - 64) < 24) {
         motorForward();
       } else {
         motorForwardTurn();
@@ -92,10 +94,10 @@ void Task2(void* pvParameters) {
       boardLedOn();
 
       // Reverse
-    //   servoWritePixel(128 - lastValidMidPixel);
+      //   servoWritePixel(128 - lastValidMidPixel);
       // servoWritePixel(128 - lastValidMidPixel);
       // motorBackward();
-      if (lastValidMidPixel<64) {
+      if (lastValidMidPixel < 64) {
         servoWritePixel(127);
       } else {
         servoWritePixel(0);
