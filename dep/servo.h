@@ -3,8 +3,8 @@
 #include "math.h"
 #include "pinouts.h"
 
-const float cAngleLimit    = 45.0f; // Max: 90 degrees
-const float cBias          = 5.0f;
+const float cAngleLimit    = 42.0f; // Max: 90 degrees
+const float cBias          = 2.0f;
 const int cServoResolution = 16; // Max: 16 bit
 
 void servoWriteAngle(float angle);
@@ -20,8 +20,13 @@ void servoWriteAngle(float angle) {
 
   clamp(angle, cBias - cAngleLimit, cBias + cAngleLimit);
 
+  // Steering -> Servo angle mapping
+  if (angle < 0) {
+    map(angle, -42.0f, 0.0f, -47.0f, 0.0f);
+  } else {
+    map(angle, 0.0f, 42.0f, 0.0f, 80.0f);
+  }
   float t = map(angle, -90.0f, 90.0f, 0.5f, 2.5f);
-
   ledcWrite(0, (t / 20.0f) * ((1 << cServoResolution) - 1));
 }
 

@@ -12,8 +12,8 @@
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
-int command = -1;
-// naviLine navi     = naviLine();
+int command           = -1;
+int lastValidMidPixel = -1;
 
 void setup() {
   Serial.begin(115200);
@@ -52,14 +52,45 @@ void assignTasks() {
   );
 }
 
-// This loop is automatically assigned to Core 1, so block it manually
-void loop() {
-  // Serial.printf("Clocck cycle: %lld",clockCycle);
-  delay(1000);
-  // navi.printBinarizedPixels();
-  // navi.printLTBrightness();
-  // navi.printLinearPixels();
+void autoTrack(int bestExplosureTime, float bestRatio) {
+  int trackMidPixel = 0;
+  float darkRatio   = 0;
+  bool isNormal     = false;
+  processCCD(trackMidPixel, darkRatio, isNormal, bestExplosureTime, bestRatio);
+
+  display.clearDisplay();
+  oledPrint(darkRatio, "RTO(%)", 2);
+
+  if (isNormal) {
+    boardLedOff();
+
+    lastValidMidPixel = getPID(trackMidPixel - 64);
+    lastValidMidPixel += 64;
+    servoWritePixel(lastValidMidPixel);
+    oledPrint(lastValidMidPixel, "out pix", 0);
+    oledPrint("tracking", 1);
+
+    // motorForward();
+  } else {
+    boardLedOn();
+
+    // Reverse
+    if (lastValidMidPixel < 64)
+      servoWritePixel(0);
+    else
+      servoWritePixel(127);
+
+    oledPrint("target lost", 1);
+
+    // motorForward();
+    // motorBackward();
+  }
+
+  oledFlush();
 }
+
+// This loop is automatically assigned to Core 1, so block it manually
+void loop() { delay(1000); }
 
 void Task1(void* pvParameters) {
   for (;;) {
@@ -72,44 +103,56 @@ void Task1(void* pvParameters) {
   }
 }
 
-int lastValidMidPixel = -1;
-
 void Task2(void* pvParameters) {
   for (;;) {
     display.clearDisplay();
 
-    int trackMidPixel = 0;
-    float darkRatio   = 0;
-    bool isNormal     = false;
-    processCCD(trackMidPixel, darkRatio, isNormal);
+    int bestExplosureTime = 0;
+    float bestRatio       = 0;
+    bool cameraIsBlocked  = false;
+    getBestExplosureTime(bestExplosureTime, bestRatio, cameraIsBlocked, true);
 
-    oledPrint(darkRatio, "d/l", 2);
-
-    if (isNormal) {
-      boardLedOff();
-
-      // motorForward();
+    Serial.println("----------------------------------------");
+    if (cameraIsBlocked) {
+      Serial.print("Best explosure time: ");
+      Serial.print(bestExplosureTime);
+      Serial.print(" with minimum ratio: ");
+      Serial.println(bestRatio);
+      Serial.println("Camera is blocked");
+      Serial.println("Bluetooth mode activated");
     } else {
-      boardLedOn();
-
-      // // Reverse
-      // if (lastValidMidPixel < 64)
-      //   servoWritePixel(0);
-      // else
-      //   servoWritePixel(127);
-
-      // oledPrint("isNormal: false", 1);
-
-      // motorForward();
-      // motorBackward();
+      Serial.print("Best explosure time: ");
+      Serial.print(bestExplosureTime);
+      Serial.print(" with minimum ratio: ");
+      Serial.println(bestRatio);
+      Serial.println("Tracking mode activated");
     }
-    lastValidMidPixel = getPID(trackMidPixel - 64);
-    lastValidMidPixel += 64;
-    servoWritePixel(lastValidMidPixel);
-    oledPrint(lastValidMidPixel, "out pix", 0);
+    Serial.println("----------------------------------------");
 
-    oledPrint("isNormal: true", 1);
-
+    oledPrint(bestExplosureTime, "EPL(s)", 0);
+    oledPrint(bestRatio, "RTO(%)", 1);
     oledFlush();
+    delay(2000);
+    display.clearDisplay();
+
+    if (cameraIsBlocked) {
+      oledPrint("CAM BLOCKED", 0);
+      oledFlush();
+      delay(1000);
+
+      display.clearDisplay();
+      oledPrint("BT MODE", 1);
+      oledFlush();
+
+      for (;;) {
+        parseCommands(command);
+      }
+    } else {
+      oledPrint("TRACK MODE", 1);
+      oledFlush();
+      for (;;) {
+        autoTrack(bestExplosureTime, bestRatio);
+      }
+    }
   }
 }

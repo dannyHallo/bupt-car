@@ -12,11 +12,20 @@ const int cCountEnd   = 127;
 const int cEffectiveLineWidthMin = 10;
 const int cEffectiveLineWidthMax = 36;
 
+// Explosure
+const int cDefaultExplosureTime     = 10;
+const int cExplosureTimeStart       = 10;
+const int cExplosureTimeEnd         = 80;
+const int cExplosureTimePropagation = 5;
+
 // Dark / light dynamic propagation
 const float cDarkRatioStart       = 0.0f;
-const float cDarkRatioPropagation = 0.01f;
+const float cDarkRatioPropagation = 0.06f;
 const float cDarkRatioEnd         = 1.0f;
 const float cDarkRatioAbnormal    = 0.8f;
+
+// Blocking condition
+const float cMinMaxRatioDeltaBlocked = 0.6f;
 
 int linearData[cNumPixels]{};
 bool binaryData[cNumPixels]{};
@@ -92,7 +101,7 @@ void printCCDOneHotData() {
   Serial.println();
 }
 
-void processLinearVals(int& minVal, int& maxVal, int& avgVal) {
+void processLinearVals(int& minVal, int& maxVal, int& avgVal, bool debug = false) {
   maxVal = 0;
   minVal = 1e6;
 
@@ -105,6 +114,17 @@ void processLinearVals(int& minVal, int& maxVal, int& avgVal) {
       minVal = currentVal;
   }
   avgVal = customRound(float(minVal + maxVal) / 2.0f);
+
+  if (debug) {
+    Serial.print("avg: ");
+    Serial.print(avgVal);
+    Serial.print("    ");
+    Serial.print("min: ");
+    Serial.print(minVal);
+    Serial.print("    ");
+    Serial.print("max: ");
+    Serial.println(maxVal);
+  }
 }
 
 void linearToRawBinary(int maxVal, float darkRatio) {
@@ -198,37 +218,118 @@ int getTrackMidPixel() {
   return trackMidPixelTmp;
 }
 
-// int getBias() {
-//   int midPoint = cNumPixels / 2;
-//   int bias     = 0;
-//   for (int i = 0; i < cNumPixels; i++) {
-//     if (binaryData[i]) {
-//       bias += (i - midPoint);
-//     }
-//   }
-//   return bias / 8;
-// }
+void getBestExplosureTime(int& bestExplosureTime, float& bestRatio, bool& cameraIsBlocked,
+                          bool debug = false) {
+  int minVal = 0;
+  int maxVal = 0;
+  int avgVal = 0;
 
-void processCCD(int& trackMidPixel, float& darkRatio, bool& isNormal) {
+  // To clear initial val
+  captrueCCD(cDefaultExplosureTime);
+
+  int resultsArraySize = (cExplosureTimeEnd - cExplosureTimeStart) / cExplosureTimePropagation + 1;
+  float darkLightRatioResults[resultsArraySize];
+  float minMaxRatioResults[resultsArraySize];
+
+  for (uint8_t i = 0; i < resultsArraySize; i++) {
+    int explosureTime           = cExplosureTimeStart + cExplosureTimePropagation * i;
+    float& darkLightRatioResult = darkLightRatioResults[i];
+    float& minMaxRatioResult    = minMaxRatioResults[i];
+    darkLightRatioResult        = -1;
+    minMaxRatioResult           = -1;
+
+    if (debug) {
+      Serial.print("Testing with explosure time: ");
+      Serial.println(explosureTime);
+    }
+
+    // Capture
+    captrueCCD(explosureTime);
+
+    // Parse linear data
+    processLinearVals(minVal, maxVal, avgVal, debug);
+    minMaxRatioResult = (maxVal == 0) ? 0 : float(minVal) / float(maxVal);
+
+    // Find track dynamically
+    for (float testDarkRatio = cDarkRatioStart; testDarkRatio < cDarkRatioEnd;
+         testDarkRatio += cDarkRatioPropagation) {
+      linearToRawBinary(maxVal, testDarkRatio);
+      int trackMidPixel = getTrackMidPixel();
+
+      if (trackMidPixel != -1) {
+        drawOneHot(trackMidPixel);
+        darkLightRatioResult = testDarkRatio;
+
+        if (debug) {
+          printCCDLinearData(maxVal);
+          printCCDBinaryRawData();
+          printCCDOneHotData();
+        }
+
+        break;
+      }
+    }
+
+    if (darkLightRatioResult == -1 && debug) {
+      Serial.println("Failed to find ratio at this explosure time!");
+    }
+  }
+
+  // Find explosure time with minimum ratio
+  float _bestRatio       = 1.0f;
+  int _bestExplosureTime = -1;
+  float _minMaxResult    = 0;
+
+  for (uint8_t i = 0; i < resultsArraySize; i++) {
+    float& ratioResult = darkLightRatioResults[i];
+    if (ratioResult == -1)
+      continue;
+
+    Serial.print("explosure_time: ");
+    Serial.print(cExplosureTimeStart + cExplosureTimePropagation * i);
+    Serial.print("  dark_light_ratio: ");
+    Serial.print(ratioResult);
+    Serial.print("  min_max_ratio: ");
+    Serial.println(minMaxRatioResults[i]);
+
+    if (ratioResult < _bestRatio) {
+      _minMaxResult      = minMaxRatioResults[i];
+      _bestRatio         = ratioResult;
+      _bestExplosureTime = cExplosureTimeStart + cExplosureTimePropagation * i;
+    }
+  }
+
+  float minMaxRatioMin = 1.0f;
+  float minMaxRatioMax = 0.0f;
+  for (uint8_t i = 0; i < resultsArraySize; i++) {
+    float& minMaxRatioResult = minMaxRatioResults[i];
+
+    if (minMaxRatioResult < minMaxRatioMin)
+      minMaxRatioMin = minMaxRatioResult;
+
+    if (minMaxRatioResult > minMaxRatioMax)
+      minMaxRatioMax = minMaxRatioResult;
+  }
+
+  bestExplosureTime = _bestExplosureTime;
+  bestRatio         = _bestRatio;
+  cameraIsBlocked =
+      (_bestExplosureTime == -1) ||
+      (minMaxRatioMin < 0.02 && minMaxRatioMax - minMaxRatioMin > cMinMaxRatioDeltaBlocked);
+}
+
+void processCCD(int& trackMidPixel, float& darkRatio, bool& isNormal, int explosureTime,
+                float bestRatio) {
   int minVal = 0;
   int maxVal = 0;
   int avgVal = 0;
   isNormal   = true;
 
   // Capture
-  captrueCCD(40);
+  captrueCCD(explosureTime);
 
   // Parse linear data
   processLinearVals(minVal, maxVal, avgVal);
-
-  Serial.print("avg: ");
-  Serial.print(avgVal);
-  Serial.print("    ");
-  Serial.print("min: ");
-  Serial.print(minVal);
-  Serial.print("    ");
-  Serial.print("max: ");
-  Serial.println(maxVal);
 
   // Find track dynamically
   for (float testDarkRatio = cDarkRatioStart; testDarkRatio < cDarkRatioEnd;
@@ -238,7 +339,7 @@ void processCCD(int& trackMidPixel, float& darkRatio, bool& isNormal) {
 
     if (trackMidPixel != -1) {
       // Compare ratio
-      if (testDarkRatio > cDarkRatioAbnormal) {
+      if (testDarkRatio > min(bestRatio * 10, cDarkRatioAbnormal)) {
         isNormal = false;
       }
 
