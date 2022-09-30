@@ -3,6 +3,10 @@
 #include "math.h"
 #include "pinouts.h"
 
+const int STATUS_NORMAL   = 0;
+const int STATUS_HIGH_DL  = 1;
+const int STATUS_NO_TRACK = 2;
+
 // CCD hardware
 const int cNumPixels  = 128;
 const int cCountStart = 15;
@@ -19,10 +23,9 @@ const int cExplosureTimeEnd         = 80;
 const int cExplosureTimePropagation = 5;
 
 // Dark / light dynamic propagation
-const float cDarkRatioStart       = 0.0f;
-const float cDarkRatioPropagation = 0.06f;
-const float cDarkRatioEnd         = 1.0f;
-const float cDarkRatioAbnormal    = 0.8f;
+const float cDarkRatioSearchingPropagation = 0.02f;
+const float cDarkRatioAbnormalMin          = 0.3f;
+const float cDarkRatioAbnormalMax          = 0.8f;
 
 // Blocking condition
 const float cMinMaxRatioDeltaBlocked = 0.6f;
@@ -31,7 +34,7 @@ int linearData[cNumPixels]{};
 bool binaryData[cNumPixels]{};
 bool binaryOnehotData[cNumPixels]{};
 
-void pinoutInitCCD() {
+void initCCD() {
   pinMode(PINOUT_CCD_SI, OUTPUT);
   pinMode(PINOUT_CCD_CLK, OUTPUT);
   pinMode(PINOUT_CCD_AO, INPUT);
@@ -127,14 +130,15 @@ void processLinearVals(int& minVal, int& maxVal, int& avgVal, bool debug = false
   }
 }
 
-void linearToRawBinary(int maxVal, float darkRatio) {
+void linearToRawBinary(int minVal, int maxVal, float darkRatio) {
 
   for (int i = 0; i < cNumPixels; i++) {
     binaryData[i] = false;
   }
 
   for (int i = cCountStart; i < cCountEnd; i++) {
-    binaryData[i] = (float(linearData[i]) < (maxVal * darkRatio)) ? true : false;
+    binaryData[i] =
+        (float(linearData[i]) < (minVal + (maxVal - minVal) * darkRatio)) ? true : false;
   }
 }
 
@@ -166,7 +170,7 @@ bool getTrackMidPixel(int fromPixel, int& trackMidPixel, int& trackEndPixel) {
       accumulatedDarkPixel++;
     }
 
-    // White pixel
+    // white pixel
     else {
       if (accumulatedDarkPixel >= customRound(cEffectiveLineWidthMin) &&
           accumulatedDarkPixel <= customRound(cEffectiveLineWidthMax)) {
@@ -177,6 +181,11 @@ bool getTrackMidPixel(int fromPixel, int& trackMidPixel, int& trackEndPixel) {
       accumulatedDarkPixel = 0;
       trackLeftPixel       = -1;
     }
+  }
+
+  if (trackRightPixel == -1 && accumulatedDarkPixel >= customRound(cEffectiveLineWidthMin) &&
+      accumulatedDarkPixel <= customRound(cEffectiveLineWidthMax)) {
+    trackRightPixel = cCountEnd - 1;
   }
 
   // Parse invalid, retain last array
@@ -251,9 +260,9 @@ void getBestExplosureTime(int& bestExplosureTime, float& bestRatio, bool& camera
     minMaxRatioResult = (maxVal == 0) ? 0 : float(minVal) / float(maxVal);
 
     // Find track dynamically
-    for (float testDarkRatio = cDarkRatioStart; testDarkRatio < cDarkRatioEnd;
-         testDarkRatio += cDarkRatioPropagation) {
-      linearToRawBinary(maxVal, testDarkRatio);
+    for (float testDarkRatio = 0.0f; testDarkRatio < 1.0f;
+         testDarkRatio += cDarkRatioSearchingPropagation) {
+      linearToRawBinary(minVal, maxVal, testDarkRatio);
       int trackMidPixel = getTrackMidPixel();
 
       if (trackMidPixel != -1) {
@@ -311,6 +320,7 @@ void getBestExplosureTime(int& bestExplosureTime, float& bestRatio, bool& camera
       minMaxRatioMax = minMaxRatioResult;
   }
 
+  // Output
   bestExplosureTime = _bestExplosureTime;
   bestRatio         = _bestRatio;
   cameraIsBlocked =
@@ -318,12 +328,12 @@ void getBestExplosureTime(int& bestExplosureTime, float& bestRatio, bool& camera
       (minMaxRatioMin < 0.02 && minMaxRatioMax - minMaxRatioMin > cMinMaxRatioDeltaBlocked);
 }
 
-void processCCD(int& trackMidPixel, float& darkRatio, bool& isNormal, int explosureTime,
-                float bestRatio) {
-  int minVal = 0;
-  int maxVal = 0;
-  int avgVal = 0;
-  isNormal   = true;
+void processCCD(int& trackMidPixel, float& darkRatio, int& tracingStatus, int explosureTime,
+                float bestRatio, bool debug = false) {
+  int minVal    = 0;
+  int maxVal    = 0;
+  int avgVal    = 0;
+  tracingStatus = STATUS_NORMAL;
 
   // Capture
   captrueCCD(explosureTime);
@@ -331,39 +341,37 @@ void processCCD(int& trackMidPixel, float& darkRatio, bool& isNormal, int explos
   // Parse linear data
   processLinearVals(minVal, maxVal, avgVal);
 
-  // Find track dynamically
-  for (float testDarkRatio = cDarkRatioStart; testDarkRatio < cDarkRatioEnd;
-       testDarkRatio += cDarkRatioPropagation) {
-    linearToRawBinary(maxVal, testDarkRatio);
+  // Find track dynamically, starting from the best ratio
+  for (float testDarkRatio = bestRatio; testDarkRatio < 1.0f;
+       testDarkRatio += cDarkRatioSearchingPropagation) {
+    linearToRawBinary(minVal, maxVal, testDarkRatio);
     trackMidPixel = getTrackMidPixel();
 
     if (trackMidPixel != -1) {
       // Compare ratio
-      if (testDarkRatio > min(bestRatio * 10, cDarkRatioAbnormal)) {
-        isNormal = false;
+      if (testDarkRatio > min(max(bestRatio * 10, cDarkRatioAbnormalMin), cDarkRatioAbnormalMax)) {
+        tracingStatus = STATUS_HIGH_DL;
       }
 
       drawOneHot(trackMidPixel);
 
-      // Debug
-      // Serial.print("currentDarkRatio: ");
-      // Serial.println(testDarkRatio);
       darkRatio = testDarkRatio;
-
       break;
     }
   }
 
   // Cannot find track
   if (trackMidPixel == -1) {
-    isNormal = false;
+    tracingStatus = STATUS_NO_TRACK;
+    darkRatio     = 0;
     return;
   }
 
-  // Debug
-  printCCDLinearData(maxVal);
-  printCCDBinaryRawData();
-  printCCDOneHotData();
+  if (debug) {
+    printCCDLinearData(maxVal);
+    printCCDBinaryRawData();
+    printCCDOneHotData();
+  }
 
   // Map pixel
   trackMidPixel =

@@ -9,7 +9,8 @@ const int cServoResolution = 16; // Max: 16 bit
 
 void servoWriteAngle(float angle);
 
-void pinoutAndPwmChannelInitServo() {
+// init pinout, pwm
+void initServo() {
   ledcSetup(0, 50, cServoResolution); // Channel 0, 50 Hz, 16 bit resolution
   ledcAttachPin(PINOUT_SERVO, 0);     // Attach servo pin to channel 0
   servoWriteAngle(0);

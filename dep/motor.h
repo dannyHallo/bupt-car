@@ -2,10 +2,12 @@
 
 #include "math.h"
 #include "pinouts.h"
+#include "speedControl.h"
 
 const int cMotorResolution = 16; // Max: 16 bit
-const int cMinimumPower    = 20000;
+const int cDefaultPower    = 22000;
 const int cMaximumPower    = 65535;
+int currentPower;
 
 float maxResolution = 0;
 
@@ -14,7 +16,12 @@ float maxResolution = 0;
 #define PWM_CHANNEL_RIGHT_MOTOR_FRONT 4
 #define PWM_CHANNEL_RIGHT_MOTOR_BACK 5
 
-void pinoutAndPwmChannelInitMotor() {
+// init speed control, motor pins init, pwm init
+void initMotor() {
+  initSpeedControl();
+
+  currentPower = cDefaultPower;
+
   ledcSetup(2, 1000, cMotorResolution); // Channel 1, 1kHz, 16 bit resolution
   ledcSetup(3, 1000, cMotorResolution); // Channel 2, 1kHz, 16 bit resolution
   ledcSetup(4, 1000, cMotorResolution); // Channel 3, 1kHz, 16 bit resolution
@@ -78,6 +85,19 @@ void motorLoop() {
   delay(2000);
 }
 
-void motorForward() { motorControl(true, true, cMinimumPower, cMinimumPower); }
-// void motorForwardTurn() { motorControl(true, true, cMinimumPowerForTurn, cMinimumPower); }
-void motorBackward() { motorControl(false, false, cMinimumPower, cMinimumPower); }
+float baseSpeedP = 1000.0f;
+
+void motorForward(float _aimSpeed, int& _currentPower, float& _currentSpeed) {
+  motorControl(true, true, currentPower, currentPower);
+
+  float currentSpeed = getSpeed();
+  float delta        = _aimSpeed - currentSpeed;
+
+//   currentPower += baseSpeedP * delta;
+  clamp(currentPower, 0, cMaximumPower);
+
+  _currentPower = currentPower;
+  _currentSpeed = currentSpeed;
+}
+
+void motorBackward() { motorControl(false, false, cDefaultPower, cDefaultPower); }

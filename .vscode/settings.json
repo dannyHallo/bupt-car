@@ -1,20 +1,21 @@
 {
   "C_Cpp.clang_format_fallbackStyle": "{BasedOnStyle: LLVM, AlignConsecutiveAssignments: Consecutive, PointerAlignment: Left, ColumnLimit: 100}",
+  "arduino.path": "D:\\Arduino",
+  "C_Cpp.intelliSenseEngine": "Tag Parser",
+  "editor.insertSpaces": true,
+  "files.autoGuessEncoding": true,
+  "arduino.logLevel": "info",
+  "explorer.confirmDelete": false,
+  "editor.detectIndentation": false,
   "files.associations": {
-    "functional": "cpp",
-    "map": "cpp",
-    "array": "cpp",
     "*.tcc": "cpp",
+    "system_error": "cpp",
+    "array": "cpp",
     "deque": "cpp",
-    "list": "cpp",
     "string": "cpp",
     "unordered_map": "cpp",
-    "unordered_set": "cpp",
     "vector": "cpp",
     "string_view": "cpp",
-    "memory": "cpp",
-    "random": "cpp",
-    "initializer_list": "cpp",
-    "regex": "cpp"
+    "initializer_list": "cpp"
   }
 }

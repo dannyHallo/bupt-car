@@ -24,3 +24,7 @@
 
 #define PINOUT_SCL 22 // Oled
 #define PINOUT_SDA 21
+
+#define PINOUT_E2A 19
+
+#define PINOUT_MOTOR_ON 32 // Control

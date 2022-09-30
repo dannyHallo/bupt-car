@@ -1,10 +1,11 @@
+// #define BT_ON
+
 #include "dep/bluetooth.h"
 #include "dep/boardLed.h"
 #include "dep/ccd.h"
 #include "dep/commandParser.h"
 #include "dep/motor.h"
 #include "dep/oled.h"
-// #include "dep/naviLine.h"
 #include "dep/pid.h"
 #include "dep/pinouts.h"
 #include "dep/servo.h"
@@ -19,17 +20,15 @@ void setup() {
   Serial.begin(115200);
 
   pinoutInitBoardLed();
-  pinoutInitCCD();
-  pinoutAndPwmChannelInitServo();
-  pinoutAndPwmChannelInitMotor();
+  initCCD();
+  initServo();
+  initMotor();
   pinoutInitAndOpenBTSerialBluetooth();
   pinoutInitAndI2cConfigOled();
 
   assignTasks();
 
-  //   navi.initNaviLine();
-
-  //   Serial.printf("Clocck cycle: %lld\n", clockCycle);
+  pinMode(PINOUT_MOTOR_ON, INPUT_PULLDOWN);
 }
 
 void assignTasks() {
@@ -53,40 +52,56 @@ void assignTasks() {
 }
 
 void autoTrack(int bestExplosureTime, float bestRatio) {
+  bool motorEnable = false;
+  if (digitalRead(PINOUT_MOTOR_ON)) {
+    motorEnable = true;
+  }
+
   int trackMidPixel = 0;
   float darkRatio   = 0;
-  bool isNormal     = false;
-  processCCD(trackMidPixel, darkRatio, isNormal, bestExplosureTime, bestRatio);
+  int trackStatus   = 0;
+  processCCD(trackMidPixel, darkRatio, trackStatus, bestExplosureTime, bestRatio, true);
 
-  display.clearDisplay();
   oledPrint(darkRatio, "RTO(%)", 2);
 
-  if (isNormal) {
-    boardLedOff();
+  switch (trackStatus) {
+  case STATUS_NORMAL:
+    // boardLedOff();
 
     lastValidMidPixel = getPID(trackMidPixel - 64);
     lastValidMidPixel += 64;
     servoWritePixel(lastValidMidPixel);
-    oledPrint(lastValidMidPixel, "out pix", 0);
+    // oledPrint(lastValidMidPixel, "out pix", 0);
     oledPrint("tracking", 1);
+    break;
 
-    // motorForward();
-  } else {
-    boardLedOn();
+  case STATUS_HIGH_DL:
+    // boardLedOn();
+    oledPrint("high ratio", 1);
+    servoWritePixel(127);
+    break;
 
-    // Reverse
-    if (lastValidMidPixel < 64)
-      servoWritePixel(0);
-    else
-      servoWritePixel(127);
-
-    oledPrint("target lost", 1);
-
-    // motorForward();
-    // motorBackward();
+  case STATUS_NO_TRACK:
+    // boardLedOn();
+    oledPrint("no track", 1);
+    servoWritePixel(127);
+    break;
   }
 
-  oledFlush();
+  if (motorEnable) {
+    int currentPower   = 0;
+    float currentSpeed = 0;
+
+    motorForward(0.2f, currentPower, currentSpeed);
+    Serial.print("power: ");
+    Serial.print(currentPower);
+    Serial.print(" ");
+    Serial.print("speed: ");
+    Serial.println(currentSpeed);
+
+  } else {
+    motorIdle();
+  }
 }
 
 // This loop is automatically assigned to Core 1, so block it manually
@@ -132,7 +147,7 @@ void Task2(void* pvParameters) {
     oledPrint(bestExplosureTime, "EPL(s)", 0);
     oledPrint(bestRatio, "RTO(%)", 1);
     oledFlush();
-    delay(2000);
+    delay(3000);
     display.clearDisplay();
 
     if (cameraIsBlocked) {
@@ -150,8 +165,17 @@ void Task2(void* pvParameters) {
     } else {
       oledPrint("TRACK MODE", 1);
       oledFlush();
+      delay(1000);
+
       for (;;) {
+        display.clearDisplay();
+
         autoTrack(bestExplosureTime, bestRatio);
+        // float currentSpeed = getSpeed();
+        // oledPrint(currentSpeed, "Speed", 0);
+        // Serial.println(currentSpeed);
+
+        oledFlush();
       }
     }
   }
