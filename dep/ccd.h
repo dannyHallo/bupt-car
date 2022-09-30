@@ -10,11 +10,10 @@ const int STATUS_NO_TRACK = 2;
 // CCD hardware
 const int cNumPixels  = 128;
 const int cCountStart = 15;
-const int cCountEnd   = 127;
+const int cCountEnd   = 126;
 
 // Line definition
 const int cEffectiveLineWidthMin = 10;
-const int cEffectiveLineWidthMax = 36;
 
 // Explosure
 const int cDefaultExplosureTime     = 10;
@@ -108,7 +107,7 @@ void processLinearVals(int& minVal, int& maxVal, int& avgVal, bool debug = false
   maxVal = 0;
   minVal = 1e6;
 
-  for (int i = cCountStart; i < cCountEnd; i++) {
+  for (int i = cCountStart; i <= cCountEnd; i++) {
     int currentVal = linearData[i];
 
     if (maxVal < currentVal)
@@ -136,7 +135,7 @@ void linearToRawBinary(int minVal, int maxVal, float darkRatio) {
     binaryData[i] = false;
   }
 
-  for (int i = cCountStart; i < cCountEnd; i++) {
+  for (int i = cCountStart; i <= cCountEnd; i++) {
     binaryData[i] =
         (float(linearData[i]) < (minVal + (maxVal - minVal) * darkRatio)) ? true : false;
   }
@@ -152,14 +151,15 @@ void drawOneHot(int point) {
   }
 }
 
-bool getTrackMidPixel(int fromPixel, int& trackMidPixel, int& trackEndPixel) {
+// incl, incl
+int getTrackMidPixel() {
   int accumulatedDarkPixel = 0;
 
-  int trackLeftPixel   = -1;
-  int trackRightPixel  = -1;
-  int trackMidPixelTmp = -1;
+  int trackLeftPixel  = -1;
+  int trackRightPixel = -1;
+  int trackMidPixel   = -1;
 
-  for (int i = fromPixel; i < cCountEnd; i++) {
+  for (int i = cCountStart; i <= cCountEnd; i++) {
     bool currentPixel = binaryData[i];
 
     // Dark pixel
@@ -170,10 +170,9 @@ bool getTrackMidPixel(int fromPixel, int& trackMidPixel, int& trackEndPixel) {
       accumulatedDarkPixel++;
     }
 
-    // white pixel
+    // White pixel
     else {
-      if (accumulatedDarkPixel >= customRound(cEffectiveLineWidthMin) &&
-          accumulatedDarkPixel <= customRound(cEffectiveLineWidthMax)) {
+      if (accumulatedDarkPixel >= customRound(cEffectiveLineWidthMin)) {
         trackRightPixel = i - 1;
         break;
       }
@@ -183,49 +182,34 @@ bool getTrackMidPixel(int fromPixel, int& trackMidPixel, int& trackEndPixel) {
     }
   }
 
-  if (trackRightPixel == -1 && accumulatedDarkPixel >= customRound(cEffectiveLineWidthMin) &&
-      accumulatedDarkPixel <= customRound(cEffectiveLineWidthMax)) {
-    trackRightPixel = cCountEnd - 1;
+  // Reaches the end
+  if (trackRightPixel == -1 && accumulatedDarkPixel >= customRound(cEffectiveLineWidthMin)) {
+    trackRightPixel = cCountEnd;
   }
 
-  // Parse invalid, retain last array
+  // Nothing valid
   if (trackLeftPixel == -1 || trackRightPixel == -1)
-    return false;
+    return -1;
 
   // Get mid point
   if ((trackRightPixel - trackLeftPixel) % 2 == 0) {
-    trackMidPixelTmp = customRound((trackRightPixel + trackLeftPixel) / 2.0f);
+    trackMidPixel = customRound((trackRightPixel + trackLeftPixel) / 2.0f);
   } else {
     int trackMidPixelCandidate1 = customRound((trackRightPixel + trackLeftPixel - 1) / 2.0f);
     int trackMidPixelCandidate2 = trackMidPixelCandidate1 + 1;
 
-    trackMidPixelTmp = (linearData[trackMidPixelCandidate1] < linearData[trackMidPixelCandidate2])
-                           ? trackMidPixelCandidate1
-                           : trackMidPixelCandidate2;
+    trackMidPixel = (linearData[trackMidPixelCandidate1] < linearData[trackMidPixelCandidate2])
+                        ? trackMidPixelCandidate1
+                        : trackMidPixelCandidate2;
   }
 
-  trackMidPixel = trackMidPixelTmp;
-  trackEndPixel = trackRightPixel + 1;
-  return true;
+  return trackMidPixel;
 }
 
-bool formerOneIsCloserToCenter(int a, int b) {
-  int midPoint = customRound((cCountEnd - cCountStart) / 2.0f);
-  return abs(a - midPoint) < abs(b - midPoint);
-}
-
-int getTrackMidPixel() {
-  int trackMidPixelTmp = -1;
-  int trackMidPixel    = 0;
-  int trackEndPixel    = cCountStart;
-
-  while (getTrackMidPixel(trackEndPixel, trackMidPixel, trackEndPixel)) {
-    if (formerOneIsCloserToCenter(trackMidPixel, trackMidPixelTmp))
-      trackMidPixelTmp = trackMidPixel;
-  }
-
-  return trackMidPixelTmp;
-}
+// bool formerOneIsCloserToCenter(int a, int b) {
+//   int midPoint = customRound((cCountEnd - cCountStart) / 2.0f);
+//   return abs(a - midPoint) < abs(b - midPoint);
+// }
 
 void getBestExplosureTime(int& bestExplosureTime, float& bestRatio, bool& cameraIsBlocked,
                           bool debug = false) {
