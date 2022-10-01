@@ -31,14 +31,14 @@ void oledPrint(const char* str, const int row = 0) {
 void oledPrint(const int val, const char* hint = "Val", const int row = 0) {
   display.setCursor(0, 10 * row);
   char str[100];
-  sprintf(str, "%s = %d", hint, val);
+  sprintf(str, "%s: %d", hint, val);
   display.println(str);
 }
 
 void oledPrint(const float val, const char* hint = "Val", const int row = 0) {
   display.setCursor(0, 10 * row);
   char str[100];
-  sprintf(str, "%s = %.2f", hint, val);
+  sprintf(str, "%s: %.2f", hint, val);
   display.println(str);
 }
 

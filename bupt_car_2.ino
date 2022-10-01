@@ -13,8 +13,7 @@
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
-int command           = -1;
-int lastValidMidPixel = -1;
+int command = -1;
 
 void setup() {
   Serial.begin(115200);
@@ -51,39 +50,38 @@ void assignTasks() {
   );
 }
 
-void autoTrack(int bestExplosureTime, float bestRatio) {
+void autoTrack(int bestExplosureTime, float minThrehold) {
   bool motorEnable = false;
   if (digitalRead(PINOUT_MOTOR_ON)) {
     motorEnable = true;
   }
 
-  int trackMidPixel = 0;
-  float darkRatio   = 0;
-  int trackStatus   = 0;
-  processCCD(trackMidPixel, darkRatio, trackStatus, bestExplosureTime, bestRatio, true);
+  int trackMidPixel   = 0;
+  float usingThrehold = 0;
+  int trackStatus     = 0;
+  processCCD(trackMidPixel, usingThrehold, trackStatus, bestExplosureTime, minThrehold, true);
 
-  oledPrint(darkRatio, "RTO(%)", 2);
+  oledPrint(usingThrehold, "Thre", 2);
 
   switch (trackStatus) {
   case STATUS_NORMAL:
-    // boardLedOff();
-
-    lastValidMidPixel = getPID(trackMidPixel - 64);
-    lastValidMidPixel += 64;
-    servoWritePixel(lastValidMidPixel);
-    // oledPrint(lastValidMidPixel, "out pix", 0);
+    // Show status
+    boardLedOff();
     oledPrint("tracking", 1);
+
+    // Get val
+    servoWritePixel(getPID(trackMidPixel - 64) + 64);
     break;
 
   case STATUS_HIGH_DL:
-    // boardLedOn();
-    oledPrint("high ratio", 1);
-    servoWritePixel(127);
-    break;
-
   case STATUS_NO_TRACK:
-    // boardLedOn();
-    oledPrint("no track", 1);
+    // Show status
+    boardLedOn();
+    if (trackStatus == STATUS_HIGH_DL)
+      oledPrint("high ratio", 1);
+    if (trackStatus == STATUS_HIGH_DL)
+      oledPrint("no track", 1);
+
     servoWritePixel(127);
     break;
   }
@@ -123,29 +121,29 @@ void Task2(void* pvParameters) {
     display.clearDisplay();
 
     int bestExplosureTime = 0;
-    float bestRatio       = 0;
+    float minThrehold     = 0;
     bool cameraIsBlocked  = false;
-    getBestExplosureTime(bestExplosureTime, bestRatio, cameraIsBlocked, true);
+    getBestExplosureTime(bestExplosureTime, minThrehold, cameraIsBlocked, false);
 
     Serial.println("----------------------------------------");
     if (cameraIsBlocked) {
       Serial.print("Best explosure time: ");
       Serial.print(bestExplosureTime);
       Serial.print(" with minimum ratio: ");
-      Serial.println(bestRatio);
+      Serial.println(minThrehold);
       Serial.println("Camera is blocked");
       Serial.println("Bluetooth mode activated");
     } else {
       Serial.print("Best explosure time: ");
       Serial.print(bestExplosureTime);
       Serial.print(" with minimum ratio: ");
-      Serial.println(bestRatio);
+      Serial.println(minThrehold);
       Serial.println("Tracking mode activated");
     }
     Serial.println("----------------------------------------");
 
     oledPrint(bestExplosureTime, "EPL(s)", 0);
-    oledPrint(bestRatio, "RTO(%)", 1);
+    oledPrint(minThrehold, "RTO(%)", 1);
     oledFlush();
     delay(3000);
     display.clearDisplay();
@@ -170,7 +168,7 @@ void Task2(void* pvParameters) {
       for (;;) {
         display.clearDisplay();
 
-        autoTrack(bestExplosureTime, bestRatio);
+        autoTrack(bestExplosureTime, minThrehold);
         // float currentSpeed = getSpeed();
         // oledPrint(currentSpeed, "Speed", 0);
         // Serial.println(currentSpeed);

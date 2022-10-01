@@ -41,5 +41,5 @@ float getSpeed() {
 
 void motorCountInterrupt() {
   rotateCount++;
-  flipBoardLed();
+//   flipBoardLed();
 }
