@@ -15,6 +15,8 @@ TaskHandle_t Task2Handle;
 
 int command = -1;
 
+pid AngelPid(0.9,0.1,0.1);
+
 void setup() {
   Serial.begin(115200);
 
@@ -27,70 +29,70 @@ void setup() {
 
   assignTasks();
 
-  pinMode(PINOUT_MOTOR_ON, INPUT_PULLDOWN);
+  pinMode(PINOUT_MOTOR_ON,INPUT_PULLDOWN);
 }
 
 void assignTasks() {
   xTaskCreatePinnedToCore(Task1,        // Task function
-                          "Task1",      // Task name
-                          2000,         // Stack size
-                          NULL,         // Parameter
-                          1,            // Priority
-                          &Task1Handle, // Task handle to keep track of created task
-                          0             // Core ID: 0:
+    "Task1",      // Task name
+    2000,         // Stack size
+    NULL,         // Parameter
+    1,            // Priority
+    &Task1Handle, // Task handle to keep track of created task
+    0             // Core ID: 0:
   );
 
   xTaskCreatePinnedToCore(Task2,        // Task function
-                          "Task2",      // Task name
-                          2000,         // Stack size
-                          NULL,         // Parameter
-                          1,            // Priority
-                          &Task2Handle, // Task handle to keep track of created task
-                          1             // Core ID: 0:
+    "Task2",      // Task name
+    2000,         // Stack size
+    NULL,         // Parameter
+    1,            // Priority
+    &Task2Handle, // Task handle to keep track of created task
+    1             // Core ID: 0:
   );
 }
 
-void autoTrack(int bestExplosureTime, float minThrehold) {
+void autoTrack(int bestExplosureTime,float minThrehold) {
   bool motorEnable = false;
   if (digitalRead(PINOUT_MOTOR_ON)) {
     motorEnable = true;
   }
 
-  int trackMidPixel   = 0;
+  int trackMidPixel = 0;
   float usingThrehold = 0;
-  int trackStatus     = 0;
-  processCCD(trackMidPixel, usingThrehold, trackStatus, bestExplosureTime, minThrehold, true);
+  int trackStatus = 0;
+  processCCD(trackMidPixel,usingThrehold,trackStatus,bestExplosureTime,minThrehold,true);
 
-  oledPrint(usingThrehold, "Thre", 2);
+  oledPrint(usingThrehold,"Thre",2);
 
   switch (trackStatus) {
   case STATUS_NORMAL:
     // Show status
     boardLedOff();
-    oledPrint("tracking", 1);
+    oledPrint("tracking",1);
 
     // Get val
-    servoWritePixel(getPID(trackMidPixel - 64) + 64);
+    servoWritePixel(AngelPid.cycle(trackMidPixel-64)+64);
     break;
 
   case STATUS_HIGH_DL:
   case STATUS_NO_TRACK:
     // Show status
     boardLedOn();
-    if (trackStatus == STATUS_HIGH_DL)
-      oledPrint("high ratio", 1);
-    if (trackStatus == STATUS_HIGH_DL)
-      oledPrint("no track", 1);
+    if (trackStatus==STATUS_HIGH_DL)
+      oledPrint("high ratio",1);
+    if (trackStatus==STATUS_HIGH_DL)
+      oledPrint("no track",1);
 
     servoWritePixel(127);
     break;
   }
 
   if (motorEnable) {
-    int currentPower   = 0;
+    int currentPower = 0;
     float currentSpeed = 0;
 
-    motorForward(0.2f, currentPower, currentSpeed);
+    motorForward(0.2f,currentPower,currentSpeed);
     Serial.print("power: ");
     Serial.print(currentPower);
     Serial.print(" ");
@@ -121,9 +123,9 @@ void Task2(void* pvParameters) {
     display.clearDisplay();
 
     int bestExplosureTime = 0;
-    float minThrehold     = 0;
-    bool cameraIsBlocked  = false;
-    getBestExplosureTime(bestExplosureTime, minThrehold, cameraIsBlocked, false);
+    float minThrehold = 0;
+    bool cameraIsBlocked = false;
+    getBestExplosureTime(bestExplosureTime,minThrehold,cameraIsBlocked,false);
 
     Serial.println("----------------------------------------");
     if (cameraIsBlocked) {
@@ -142,33 +144,33 @@ void Task2(void* pvParameters) {
     }
     Serial.println("----------------------------------------");
 
-    oledPrint(bestExplosureTime, "EPL(s)", 0);
-    oledPrint(minThrehold, "RTO(%)", 1);
+    oledPrint(bestExplosureTime,"EPL(s)",0);
+    oledPrint(minThrehold,"RTO(%)",1);
     oledFlush();
     delay(3000);
     display.clearDisplay();
 
     if (cameraIsBlocked) {
-      oledPrint("CAM BLOCKED", 0);
+      oledPrint("CAM BLOCKED",0);
       oledFlush();
       delay(1000);
 
       display.clearDisplay();
-      oledPrint("BT MODE", 1);
+      oledPrint("BT MODE",1);
       oledFlush();
 
       for (;;) {
         parseCommands(command);
       }
     } else {
-      oledPrint("TRACK MODE", 1);
+      oledPrint("TRACK MODE",1);
       oledFlush();
       delay(1000);
 
       for (;;) {
         display.clearDisplay();
 
-        autoTrack(bestExplosureTime, minThrehold);
+        autoTrack(bestExplosureTime,minThrehold);
         // float currentSpeed = getSpeed();
         // oledPrint(currentSpeed, "Speed", 0);
         // Serial.println(currentSpeed);
