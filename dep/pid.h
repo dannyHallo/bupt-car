@@ -31,11 +31,11 @@ public:
         Kd = kd;
     }
 
-    int cycle(float error,float t = 1) {
+    int update(float error,float t = 1) {
         P = error;
         I = I+error;
         D = error-previous_error;
-        PID_value = (Kp*P)+(Ki*I)+(Kd*D);
+        PID_value = ((Kp*P)+(Ki*I)+(Kd*D))*t;
         clamp(PID_value,-64.0f,64.0f);
 
         previous_error = error;

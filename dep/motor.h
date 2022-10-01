@@ -87,8 +87,14 @@ void motorLoop() {
 
 float baseSpeedP = 1000.0f;
 
+pid motorPID(1e6,1e3,1e3);
+
 void motorForward(float _aimSpeed,int& _currentPower,float& _currentSpeed) {
-  motorControl(true,true,currentPower,currentPower);
+  float currentSpeed = getSpeed();
+  float delta = _aimSpeed-currentSpeed;
+  float p = currentPower+motorPID.update(delta);
+
+  motorControl(true,true,p,p);
 
   //   float currentSpeed = getSpeed();
   //   float delta        = _aimSpeed - currentSpeed;
