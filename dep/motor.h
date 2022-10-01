@@ -3,9 +3,11 @@
 #include "math.h"
 #include "pinouts.h"
 #include "speedControl.h"
+#include "pid.h"
+#include "oled.h"
 
 const int cMotorResolution = 16; // Max: 16 bit
-const int cDefaultPower = 22000;
+const int cDefaultPower = 30000;
 const int cMaximumPower = 65535;
 int currentPower;
 
@@ -87,12 +89,16 @@ void motorLoop() {
 
 float baseSpeedP = 1000.0f;
 
-pid motorPID(1e6,1e3,1e3);
+pid motorPID(6e4,1e4,1e4);
 
 void motorForward(float _aimSpeed,int& _currentPower,float& _currentSpeed) {
   float currentSpeed = getSpeed();
   float delta = _aimSpeed-currentSpeed;
   float p = currentPower+motorPID.update(delta);
+
+
+  oledPrint(p,"power",0);
+  oledPrint(currentSpeed,"speed",1);
 
   motorControl(true,true,p,p);
 

@@ -31,15 +31,14 @@ public:
         Kd = kd;
     }
 
-    int update(float error,float t = 1) {
+    float update(float error,float t = 1) {
         P = error;
         I = I+error;
         D = error-previous_error;
         PID_value = ((Kp*P)+(Ki*I)+(Kd*D))*t;
-        clamp(PID_value,-64.0f,64.0f);
 
         previous_error = error;
-        return customRound(PID_value);
+        return PID_value;
     }
 
 private:

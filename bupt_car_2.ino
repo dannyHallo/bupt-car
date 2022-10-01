@@ -15,7 +15,7 @@ TaskHandle_t Task2Handle;
 
 int command = -1;
 
-pid angelPID(0.9,0.1,0.1);
+pid angelPID(1,0,0.1);
 
 void setup() {
   Serial.begin(115200);
@@ -92,7 +92,7 @@ void autoTrack(int bestExplosureTime,float minThrehold) {
     int currentPower = 0;
     float currentSpeed = 0;
 
-    motorForward(0.2f,currentPower,currentSpeed);
+    motorForward(0.6,currentPower,currentSpeed);
     Serial.print("power: ");
     Serial.print(currentPower);
     Serial.print(" ");
