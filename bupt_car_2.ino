@@ -15,7 +15,7 @@ TaskHandle_t Task2Handle;
 
 int command = -1;
 
-pid AngelPid(0.9,0.1,0.1);
+pid angelPID(0.9,0.1,0.1);
 
 void setup() {
   Serial.begin(115200);
@@ -72,7 +72,7 @@ void autoTrack(int bestExplosureTime,float minThrehold) {
     oledPrint("tracking",1);
 
     // Get val
-    servoWritePixel(AngelPid.cycle(trackMidPixel-64)+64);
+    servoWritePixel(angelPID.update(trackMidPixel-64)+64);
     break;
 
   case STATUS_HIGH_DL:
