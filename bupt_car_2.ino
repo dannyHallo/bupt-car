@@ -16,193 +16,199 @@ TaskHandle_t Task2Handle;
 
 int command = -1;
 
-pid angelPID(1, 0, 0.1);
+pid angelPID(1,0,0.1);
 
 void setup() {
-  Serial.begin(115200);
+    Serial.begin(115200);
 
-  pinoutInitBoardLed();
-  initColor();
-  initCCD();
-  initServo();
-  initMotor();
-  initBluetooth();
-  initOled();
+    pinoutInitBoardLed();
+    initColor();
+    initCCD();
+    initServo();
+    initMotor();
+    initBluetooth();
+    initOled();
 
-  assignTasks();
+    assignTasks();
 
-  pinMode(PINOUT_MOTOR_ON, INPUT_PULLDOWN);
+    pinMode(PINOUT_MOTOR_ON,INPUT_PULLDOWN);
 }
 
 void assignTasks() {
-  xTaskCreatePinnedToCore(Task1,        // Task function
-                          "Task1",      // Task name
-                          2000,         // Stack size
-                          NULL,         // Parameter
-                          1,            // Priority
-                          &Task1Handle, // Task handle to keep track of created task
-                          0             // Core ID: 0:
-  );
+    xTaskCreatePinnedToCore(Task1,        // Task function
+        "Task1",      // Task name
+        2000,         // Stack size
+        NULL,         // Parameter
+        1,            // Priority
+        &Task1Handle, // Task handle to keep track of created task
+        0             // Core ID: 0:
+    );
 
-  xTaskCreatePinnedToCore(Task2,        // Task function
-                          "Task2",      // Task name
-                          2000,         // Stack size
-                          NULL,         // Parameter
-                          1,            // Priority
-                          &Task2Handle, // Task handle to keep track of created task
-                          1             // Core ID: 0:
-  );
+    xTaskCreatePinnedToCore(Task2,        // Task function
+        "Task2",      // Task name
+        2000,         // Stack size
+        NULL,         // Parameter
+        1,            // Priority
+        &Task2Handle, // Task handle to keep track of created task
+        1             // Core ID: 0:
+    );
 }
 
-void autoTrack(int bestExplosureTime, float minThrehold) {
-  bool motorEnable = digitalRead(PINOUT_MOTOR_ON) ? true : false;
+void autoTrack(int bestExplosureTime,float minThrehold) {
+    bool motorEnable = digitalRead(PINOUT_MOTOR_ON) ? true : false;
 
-  int trackMidPixel   = 0;
-  float usingThrehold = 0;
-  int trackStatus     = 0;
+    int trackMidPixel = 0;
+    float usingThrehold = 0;
+    int trackStatus = 0;
 
-  processCCD(trackMidPixel, usingThrehold, trackStatus, bestExplosureTime, minThrehold, true);
+    bool isPlatform = false;
 
-  switch (trackStatus) {
-  case STATUS_NORMAL:
-    // Show status
-    boardLedOff();
+    processCCD(trackMidPixel,usingThrehold,trackStatus,bestExplosureTime,minThrehold,true);
 
-    // Get val
-    servoWritePixel(angelPID.update(trackMidPixel - 64) + 64);
-    break;
+    switch (trackStatus) {
+    case STATUS_NORMAL:
+        // Show status
+        boardLedOff();
 
-  case STATUS_HIGH_DL:
-  case STATUS_NO_TRACK:
-    boardLedOn();
+        // Get val
+        servoWritePixel(angelPID.update(trackMidPixel-64)+64);
+        break;
 
-    if (trackStatus == STATUS_HIGH_DL)
-      oledPrint("!highratio", 1);
-    if (trackStatus == STATUS_NO_TRACK)
-      oledPrint("!notrack", 1);
+    case STATUS_HIGH_DL:
+    case STATUS_PLATFORM:
+        boardLedOn();
+        motorIdle();
+        break;
+    case STATUS_NO_TRACK:
+        boardLedOn();
 
-    servoWritePixel(127);
-    break;
-  }
+        if (trackStatus==STATUS_HIGH_DL)
+            oledPrint("!highratio",1);
+        if (trackStatus==STATUS_NO_TRACK)
+            oledPrint("!notrack",1);
 
-  if (motorEnable) {
-    motorForward(0.5);
-  } else {
-    motorIdle();
-  }
+        servoWritePixel(127);
+        break;
+    }
+
+    if (motorEnable) {
+        motorForward(0.5);
+    } else {
+        motorIdle();
+    }
 }
 
 // this loop is intentionally left blank
 void loop() { delay(1000); }
 
 void Task1(void* pvParameters) {
-  for (;;) {
-    if (Serial.available()) {
-      btSend(Serial.read());
-    }
+    for (;;) {
+        if (Serial.available()) {
+            btSend(Serial.read());
+        }
 
-    command = btRecieve();
-    vTaskDelay(20);
-  }
+        command = btRecieve();
+        vTaskDelay(20);
+    }
 }
 
 void printColorToRow(int row = 0) {
-  switch (getColor()) {
-  case COLOR_RED:
-    oledPrint("RED", row);
-    break;
-  case COLOR_YELLOW:
-    oledPrint("YELLOW", row);
-    break;
-  case COLOR_PINK:
-    oledPrint("PINK", row);
-    break;
-  case COLOR_WHITE:
-    oledPrint("WHITE", row);
-    break;
-  case COLOR_BLACK:
-    oledPrint("BLACK", row);
-    break;
-  case COLOR_GREEN:
-    oledPrint("GREEN", row);
-    break;
-  case COLOR_DARK_BLUE:
-    oledPrint("DARK_BLUE", row);
-    break;
-  case COLOR_BLUE:
-    oledPrint("BLUE", row);
-    break;
-  }
+    switch (getColor()) {
+    case COLOR_RED:
+        oledPrint("RED",row);
+        break;
+    case COLOR_YELLOW:
+        oledPrint("YELLOW",row);
+        break;
+    case COLOR_PINK:
+        oledPrint("PINK",row);
+        break;
+    case COLOR_WHITE:
+        oledPrint("WHITE",row);
+        break;
+    case COLOR_BLACK:
+        oledPrint("BLACK",row);
+        break;
+    case COLOR_GREEN:
+        oledPrint("GREEN",row);
+        break;
+    case COLOR_DARK_BLUE:
+        oledPrint("DARK_BLUE",row);
+        break;
+    case COLOR_BLUE:
+        oledPrint("BLUE",row);
+        break;
+    }
 }
 void mainLoop1() {
-  display.clearDisplay();
+    display.clearDisplay();
 
-  bool cameraIsBlocked = false;
-  bool bestAvailable   = false;
+    bool cameraIsBlocked = false;
+    bool bestAvailable = false;
 
-  explosureRecord bestRecord;
-  getBestExplosureTime(bestRecord, cameraIsBlocked, bestAvailable, true);
+    explosureRecord bestRecord;
+    getBestExplosureTime(bestRecord,cameraIsBlocked,bestAvailable,true);
 
-  Serial.println("----------------------------------------");
-  if (cameraIsBlocked) {
-    Serial.print("camera blocked, ");
-    Serial.println("bluetooth mode activated");
-  } else {
-    Serial.print("camera available, ");
-    Serial.println("tracking mode activated");
-  }
-
-  if (bestAvailable) {
-    Serial.print("Best explosure time: ");
-    Serial.print(bestRecord.explosureTime);
-    Serial.print(" with minimum ratio: ");
-    Serial.println(bestRecord.threhold);
-  } else {
-    Serial.println("No available record");
-  }
-
-  Serial.println("----------------------------------------");
-
-  oledPrint(bestRecord.explosureTime, "expl", 0);
-  oledPrint(bestRecord.threhold, "thre", 1);
-  oledFlush();
-  delay(2500);
-  display.clearDisplay();
-
-  if (cameraIsBlocked) {
-    oledPrint("BT MODE", 1);
-    oledFlush();
-
-    for (;;) {
-      parseCommands(command);
+    Serial.println("----------------------------------------");
+    if (cameraIsBlocked) {
+        Serial.print("camera blocked, ");
+        Serial.println("bluetooth mode activated");
+    } else {
+        Serial.print("camera available, ");
+        Serial.println("tracking mode activated");
     }
-  } else {
-    oledPrint("TRACK MODE", 1);
-    oledFlush();
-    delay(1000);
 
-    for (;;) {
-      display.clearDisplay();
-
-      printColorToRow(0);
-      autoTrack(bestRecord.explosureTime, bestRecord.threhold);
-      oledFlush();
+    if (bestAvailable) {
+        Serial.print("Best explosure time: ");
+        Serial.print(bestRecord.explosureTime);
+        Serial.print(" with minimum ratio: ");
+        Serial.println(bestRecord.threhold);
+    } else {
+        Serial.println("No available record");
     }
-  }
+
+    Serial.println("----------------------------------------");
+
+    oledPrint(bestRecord.explosureTime,"expl",0);
+    oledPrint(bestRecord.threhold,"thre",1);
+    oledFlush();
+    delay(2500);
+    display.clearDisplay();
+
+    if (cameraIsBlocked) {
+        oledPrint("BT MODE",1);
+        oledFlush();
+
+        for (;;) {
+            parseCommands(command);
+        }
+    } else {
+        oledPrint("TRACK MODE",1);
+        oledFlush();
+        delay(1000);
+
+        for (;;) {
+            display.clearDisplay();
+
+            printColorToRow(0);
+            autoTrack(bestRecord.explosureTime,bestRecord.threhold);
+            oledFlush();
+        }
+    }
 }
 
 void colorLoop() { getColor(); }
 
 void Task2(void* pvParameters) {
-  // Greeting from core 1
-  display.clearDisplay();
-  oledPrint("Hello!", 0);
-  oledFlush();
+    // Greeting from core 1
+    display.clearDisplay();
+    oledPrint("Hello!",0);
+    oledFlush();
 
-  Serial.println("Hello!");
+    Serial.println("Hello!");
 
-  for (;;) {
-    // colorLoop();
-    mainLoop1();
-  }
+    for (;;) {
+        // colorLoop();
+        mainLoop1();
+    }
 }
