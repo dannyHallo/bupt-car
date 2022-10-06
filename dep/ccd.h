@@ -1,6 +1,8 @@
 #pragma once
 
+#include "boardLed.h"
 #include "math.h"
+#include "oled.h"
 #include "pinouts.h"
 
 const int STATUS_NORMAL   = 0;
@@ -22,16 +24,22 @@ const int cExplosureTimeEnd         = 80;
 const int cExplosureTimePropagation = 5;
 
 // Dark / light dynamic propagation
-const float cThreholdSearchingPropagation = 0.1f;
-const float cDarkRatioAbnormalMin         = 0.3f;
-const float cDarkRatioAbnormalMax         = 0.8f;
+const float cThreholdSearchingPropagationInit = 0.01f;
+const float cThreholdSearchingPropagation     = 0.1f;
+const float cDarkRatioAbnormalMin             = 0.3f;
+const float cDarkRatioAbnormalMax             = 0.8f;
 
 // Blocking condition
 const float cMinMaxRatioDeltaBlocked = 0.6f;
 
+// Solid Black Line Detection
+const float cBlockingConditionRatio = 0.5f;
+
 int linearData[cNumPixels]{};
 bool binaryData[cNumPixels]{};
 bool binaryOnehotData[cNumPixels]{};
+
+int avgMarkingVal = 0;
 
 void initCCD() {
   pinMode(PINOUT_CCD_SI, OUTPUT);
@@ -205,49 +213,60 @@ int getTrackMidPixel() {
   return trackMidPixel;
 }
 
-// bool formerOneIsCloserToCenter(int a, int b) {
-//   int midPoint = customRound((cCountEnd - cCountStart) / 2.0f);
-//   return abs(a - midPoint) < abs(b - midPoint);
-// }
+struct explosureRecord {
+  int minVal;
+  int maxVal;
+  int avgVal;
+  int explosureTime;
+  float threhold;
+  float contrast;
+};
 
-void getBestExplosureTime(int& bestExplosureTime, float& minThrehold, bool& cameraIsBlocked,
+int bestAvg = 0;
+
+void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bool& bestAvailable,
                           bool debug = false) {
+  cameraIsBlocked = false;
+  bestAvailable   = false;
+
   // Clear previous val
   captrueCCD(cDefaultExplosureTime);
 
-  int resultsArraySize = (cExplosureTimeEnd - cExplosureTimeStart) / cExplosureTimePropagation + 1;
-  float threholdsForEachExplosureTime[resultsArraySize];
-  float minMaxRatioResults[resultsArraySize];
+  int recordSize = (cExplosureTimeEnd - cExplosureTimeStart) / cExplosureTimePropagation + 1;
+  float threholdsForEachExplosureTime[recordSize];
+  float minMaxRatioResults[recordSize];
+  explosureRecord records[recordSize];
 
   // Test for each explosuring time
-  for (uint8_t i = 0; i < resultsArraySize; i++) {
-    int explosureTime = cExplosureTimeStart + cExplosureTimePropagation * i;
+  for (uint8_t i = 0; i < recordSize; i++) {
+    explosureRecord& thisRecord = records[i];
 
-    float& thisThrehold = threholdsForEachExplosureTime[i];
-    float& thisContrast = minMaxRatioResults[i];
-    thisThrehold        = -1;
-    thisContrast        = -1;
+    int& thisExplosureTime = thisRecord.explosureTime;
+    int& thisMinVal        = thisRecord.minVal;
+    int& thisMaxVal        = thisRecord.maxVal;
+    int& thisAvgVal        = thisRecord.avgVal;
+    float& thisThrehold    = thisRecord.threhold;
+    float& thisContrast    = thisRecord.contrast;
+
+    thisThrehold      = -1;
+    thisExplosureTime = cExplosureTimeStart + cExplosureTimePropagation * i;
 
     if (debug) {
-      Serial.print("Testing with explosure time: ");
-      Serial.println(explosureTime);
+      Serial.print("explosure time: ");
+      Serial.println(thisExplosureTime);
     }
 
     // Capture
-    captrueCCD(explosureTime);
+    captrueCCD(thisExplosureTime);
+    captrueCCD(thisExplosureTime);
 
-    // Parse for min, max, avg
-    int minVal = 0;
-    int maxVal = 0;
-    int avgVal = 0;
-    processLinearVals(minVal, maxVal, avgVal, debug);
-
-    thisContrast = (maxVal == 0) ? 0 : float(minVal) / float(maxVal);
+    processLinearVals(thisMinVal, thisMaxVal, thisAvgVal, debug);
+    thisContrast = (thisMaxVal == 0) ? 0 : float(thisMinVal) / float(thisMaxVal);
 
     // Find track dynamically
     for (float testThrehold = 0.0f; testThrehold < 1.0f;
-         testThrehold += cThreholdSearchingPropagation) {
-      linearToBinary(minVal, maxVal, testThrehold);
+         testThrehold += cThreholdSearchingPropagationInit) {
+      linearToBinary(thisMinVal, thisMaxVal, testThrehold);
       int trackMidPixel = getTrackMidPixel();
 
       if (trackMidPixel != -1) {
@@ -255,7 +274,7 @@ void getBestExplosureTime(int& bestExplosureTime, float& minThrehold, bool& came
 
         if (debug) {
           drawOneHot(trackMidPixel);
-          printCCDLinearData(maxVal);
+          printCCDLinearData(thisMaxVal);
           printCCDBinaryRawData();
           printCCDOneHotData();
         }
@@ -267,33 +286,42 @@ void getBestExplosureTime(int& bestExplosureTime, float& minThrehold, bool& came
   }
 
   // Find explosure time with minimum ratio
-  float _minThrehold     = 1.0f;
-  int _bestExplosureTime = -1;
+  float minThrehold = 1.0f;
+  float minContrast = 1.0f;
+  float maxContrast = 0.0f;
 
-  for (uint8_t i = 0; i < resultsArraySize; i++) {
-    float& thisThrehold = threholdsForEachExplosureTime[i];
+  for (uint8_t i = 0; i < recordSize; i++) {
+    explosureRecord& thisRecord = records[i];
+
+    int& thisExplosureTime = thisRecord.explosureTime;
+    int& thisMinVal        = thisRecord.minVal;
+    int& thisMaxVal        = thisRecord.maxVal;
+    int& thisAvgVal        = thisRecord.avgVal;
+    float& thisThrehold    = thisRecord.threhold;
+    float& thisContrast    = thisRecord.contrast;
+
     if (thisThrehold == -1)
       continue;
 
-    int explosureTime = cExplosureTimeStart + cExplosureTimePropagation * i;
-
     Serial.print("explosure_time: ");
-    Serial.print(explosureTime);
+    Serial.print(thisExplosureTime);
     Serial.print("  threhold: ");
     Serial.print(thisThrehold);
-    Serial.print("  min_max_ratio: ");
-    Serial.println();
+    Serial.print("  contrast: ");
+    Serial.println(thisContrast);
 
-    if (thisThrehold < _minThrehold) {
-      _minThrehold       = thisThrehold;
-      _bestExplosureTime = explosureTime;
+    if (thisThrehold < minThrehold) {
+      minThrehold = thisThrehold;
+      {
+        bestRecord.explosureTime = thisExplosureTime;
+        bestRecord.minVal        = thisMinVal;
+        bestRecord.maxVal        = thisMaxVal;
+        bestRecord.avgVal        = thisAvgVal;
+        bestRecord.threhold      = thisThrehold;
+        bestRecord.contrast      = thisContrast;
+      }
+      bestAvailable = true;
     }
-  }
-
-  float minContrast = 1.0f;
-  float maxContrast = 0.0f;
-  for (uint8_t i = 0; i < resultsArraySize; i++) {
-    float& thisContrast = minMaxRatioResults[i];
 
     if (thisContrast < minContrast)
       minContrast = thisContrast;
@@ -302,25 +330,38 @@ void getBestExplosureTime(int& bestExplosureTime, float& minThrehold, bool& came
       maxContrast = thisContrast;
   }
 
+  bestAvg = bestRecord.avgVal;
+  Serial.print("bestAvg ");
+  Serial.println(bestAvg);
+
   // Output
-  bestExplosureTime = _bestExplosureTime;
-  minThrehold       = _minThrehold;
-  cameraIsBlocked   = (_bestExplosureTime == -1) ||
+  cameraIsBlocked = !bestAvailable ||
                     (minContrast < 0.02 && maxContrast - minContrast > cMinMaxRatioDeltaBlocked);
 }
 
 void processCCD(int& trackMidPixel, float& usingThrehold, int& tracingStatus, int explosureTime,
                 float minThrehold, bool debug = false) {
-  int minVal    = 0;
-  int maxVal    = 0;
-  int avgVal    = 0;
+
+  int minVal = 0;
+  int maxVal = 0;
+  int avgVal = 0;
+
   tracingStatus = STATUS_NORMAL;
 
   // Capture
   captrueCCD(explosureTime);
+  captrueCCD(explosureTime);
 
   // Parse linear data
-  processLinearVals(minVal, maxVal, avgVal);
+  processLinearVals(minVal, maxVal, avgVal, debug);
+
+  float solidRatio = (float)avgVal / (float)bestAvg;
+  oledPrint(solidRatio, "solidRto", 2);
+  if (solidRatio < cBlockingConditionRatio) {
+    boardLedOn();
+  } else {
+    boardLedOff();
+  }
 
   // Find track dynamically, starting from the best ratio
   for (float testThrehold = minThrehold; testThrehold < 1.0f;
@@ -334,7 +375,8 @@ void processCCD(int& trackMidPixel, float& usingThrehold, int& tracingStatus, in
         tracingStatus = STATUS_HIGH_DL;
       }
 
-      drawOneHot(trackMidPixel);
+      if (debug)
+        drawOneHot(trackMidPixel);
 
       usingThrehold = testThrehold;
       break;

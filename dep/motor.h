@@ -6,17 +6,18 @@
 #include "pinouts.h"
 #include "speedControl.h"
 
-const int cMotorResolution = 16; // Max: 16 bit
-const int cDefaultPower    = 30000;
-const int cMaximumPower    = 65535;
-int currentPower;
-
-float maxResolution = 0;
-
 #define PWM_CHANNEL_LEFT_MOTOR_FRONT 2
 #define PWM_CHANNEL_LEFT_MOTOR_BACK 3
 #define PWM_CHANNEL_RIGHT_MOTOR_FRONT 4
 #define PWM_CHANNEL_RIGHT_MOTOR_BACK 5
+
+const int cMotorResolution = 16; // Max: 16 bit
+const int cDefaultPower    = 30000;
+const int cMaximumPower    = 65535;
+
+int currentPower;
+float maxResolution = 0;
+pid motorPID(6e4, 1e4, 1e4);
 
 // init speed control, motor pins init, pwm init
 void initMotor() {
@@ -75,40 +76,15 @@ void motorBrake() {
   ledcWrite(PWM_CHANNEL_RIGHT_MOTOR_BACK, maxResolution);
 }
 
-void motorLoop() {
-  motorControl(true, true, 60000, 60000);
-  delay(500);
-  motorIdle();
-  delay(1000);
-
-  motorControl(true, true, 60000, 60000);
-  delay(500);
-  motorBrake();
-  delay(2000);
-}
-
-float baseSpeedP = 1000.0f;
-
-pid motorPID(6e4, 1e4, 1e4);
-
-void motorForward(float _aimSpeed, int& _currentPower, float& _currentSpeed) {
+void motorForward(float aimSpeed) {
   float currentSpeed = getSpeed();
-  float delta        = _aimSpeed - currentSpeed;
+  float delta        = aimSpeed - currentSpeed;
   float p            = currentPower + motorPID.update(delta);
 
-  oledPrint(p, "power", 0);
-  oledPrint(currentSpeed, "speed", 1);
+  // Debugging
+  //   oledPrint(p, "power", 0);
+  //   oledPrint(currentSpeed, "speed", 1);
 
+  clamp(currentPower, 0, cMaximumPower);
   motorControl(true, true, p, p);
-
-  //   float currentSpeed = getSpeed();
-  //   float delta        = _aimSpeed - currentSpeed;
-
-  // //   currentPower += baseSpeedP * delta;
-  //   clamp(currentPower, 0, cMaximumPower);
-
-  //   _currentPower = currentPower;
-  //   _currentSpeed = currentSpeed;
 }
-
-void motorBackward() { motorControl(false, false, cDefaultPower, cDefaultPower); }

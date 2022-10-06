@@ -55,23 +55,18 @@ void assignTasks() {
 }
 
 void autoTrack(int bestExplosureTime, float minThrehold) {
-  bool motorEnable = false;
-  if (digitalRead(PINOUT_MOTOR_ON)) {
-    motorEnable = true;
-  }
+  bool motorEnable = digitalRead(PINOUT_MOTOR_ON) ? true : false;
 
   int trackMidPixel   = 0;
   float usingThrehold = 0;
   int trackStatus     = 0;
-  processCCD(trackMidPixel, usingThrehold, trackStatus, bestExplosureTime, minThrehold, true);
 
-  oledPrint(usingThrehold, "Thre", 2);
+  processCCD(trackMidPixel, usingThrehold, trackStatus, bestExplosureTime, minThrehold, true);
 
   switch (trackStatus) {
   case STATUS_NORMAL:
     // Show status
     boardLedOff();
-    oledPrint("tracking", 1);
 
     // Get val
     servoWritePixel(angelPID.update(trackMidPixel - 64) + 64);
@@ -79,34 +74,25 @@ void autoTrack(int bestExplosureTime, float minThrehold) {
 
   case STATUS_HIGH_DL:
   case STATUS_NO_TRACK:
-    // Show status
     boardLedOn();
+
     if (trackStatus == STATUS_HIGH_DL)
-      oledPrint("high ratio", 1);
-    if (trackStatus == STATUS_HIGH_DL)
-      oledPrint("no track", 1);
+      oledPrint("!highratio", 1);
+    if (trackStatus == STATUS_NO_TRACK)
+      oledPrint("!notrack", 1);
 
     servoWritePixel(127);
     break;
   }
 
   if (motorEnable) {
-    int currentPower   = 0;
-    float currentSpeed = 0;
-
-    motorForward(0.6, currentPower, currentSpeed);
-    Serial.print("power: ");
-    Serial.print(currentPower);
-    Serial.print(" ");
-    Serial.print("speed: ");
-    Serial.println(currentSpeed);
-
+    motorForward(0.5);
   } else {
     motorIdle();
   }
 }
 
-// This loop is automatically assigned to Core 1, so block it manually
+// this loop is intentionally left blank
 void loop() { delay(1000); }
 
 void Task1(void* pvParameters) {
@@ -120,43 +106,70 @@ void Task1(void* pvParameters) {
   }
 }
 
+void printColorToRow(int row = 0) {
+  switch (getColor()) {
+  case COLOR_RED:
+    oledPrint("RED", row);
+    break;
+  case COLOR_YELLOW:
+    oledPrint("YELLOW", row);
+    break;
+  case COLOR_PINK:
+    oledPrint("PINK", row);
+    break;
+  case COLOR_WHITE:
+    oledPrint("WHITE", row);
+    break;
+  case COLOR_BLACK:
+    oledPrint("BLACK", row);
+    break;
+  case COLOR_GREEN:
+    oledPrint("GREEN", row);
+    break;
+  case COLOR_DARK_BLUE:
+    oledPrint("DARK_BLUE", row);
+    break;
+  case COLOR_BLUE:
+    oledPrint("BLUE", row);
+    break;
+  }
+}
 void mainLoop1() {
   display.clearDisplay();
 
-  int bestExplosureTime = 0;
-  float minThrehold     = 0;
-  bool cameraIsBlocked  = false;
-  getBestExplosureTime(bestExplosureTime, minThrehold, cameraIsBlocked, false);
+  bool cameraIsBlocked = false;
+  bool bestAvailable   = false;
+
+  explosureRecord bestRecord;
+  getBestExplosureTime(bestRecord, cameraIsBlocked, bestAvailable, true);
 
   Serial.println("----------------------------------------");
   if (cameraIsBlocked) {
-    Serial.print("Best explosure time: ");
-    Serial.print(bestExplosureTime);
-    Serial.print(" with minimum ratio: ");
-    Serial.println(minThrehold);
-    Serial.println("Camera is blocked");
-    Serial.println("Bluetooth mode activated");
+    Serial.print("camera blocked, ");
+    Serial.println("bluetooth mode activated");
   } else {
-    Serial.print("Best explosure time: ");
-    Serial.print(bestExplosureTime);
-    Serial.print(" with minimum ratio: ");
-    Serial.println(minThrehold);
-    Serial.println("Tracking mode activated");
+    Serial.print("camera available, ");
+    Serial.println("tracking mode activated");
   }
+
+  if (bestAvailable) {
+    Serial.print("Best explosure time: ");
+    Serial.print(bestRecord.explosureTime);
+    Serial.print(" with minimum ratio: ");
+    Serial.println(bestRecord.threhold);
+  } else {
+    Serial.println("No available record");
+  }
+
   Serial.println("----------------------------------------");
 
-  oledPrint(bestExplosureTime, "EPL(s)", 0);
-  oledPrint(minThrehold, "RTO(%)", 1);
+  oledPrint(bestRecord.explosureTime, "expl", 0);
+  oledPrint(bestRecord.threhold, "thre", 1);
   oledFlush();
-  delay(3000);
+  delay(2500);
   display.clearDisplay();
 
   if (cameraIsBlocked) {
-    oledPrint("CAM BLOCKED", 0);
-    oledFlush();
-    delay(1000);
-
-    display.clearDisplay();
     oledPrint("BT MODE", 1);
     oledFlush();
 
@@ -171,17 +184,14 @@ void mainLoop1() {
     for (;;) {
       display.clearDisplay();
 
-      autoTrack(bestExplosureTime, minThrehold);
+      printColorToRow(0);
+      autoTrack(bestRecord.explosureTime, bestRecord.threhold);
       oledFlush();
     }
   }
 }
 
-void testLoop() {
-  getColor();
-  delay(3000);
-//   testColorLoop();
-}
+void colorLoop() { getColor(); }
 
 void Task2(void* pvParameters) {
   // Greeting from core 1
@@ -192,6 +202,7 @@ void Task2(void* pvParameters) {
   Serial.println("Hello!");
 
   for (;;) {
-    testLoop();
+    // colorLoop();
+    mainLoop1();
   }
 }
