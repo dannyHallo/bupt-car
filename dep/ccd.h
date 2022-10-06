@@ -360,6 +360,7 @@ void processCCD(int& trackMidPixel,float& usingThrehold,int& tracingStatus,int e
   oledPrint(solidRatio,"solidRto",2);
   if (solidRatio<cBlockingConditionRatio) {
     boardLedOn();
+    tracingStatus = STATUS_PLATFORM;
   } else {
     boardLedOff();
   }

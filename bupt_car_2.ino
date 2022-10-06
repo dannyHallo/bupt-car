@@ -17,6 +17,8 @@ TaskHandle_t Task2Handle;
 
 int command = -1;
 
+int location = 0;
+
 pid angelPID(angle_kp,angle_ki,angle_kd);
 
 void setup() {
@@ -81,6 +83,7 @@ void autoTrack(int bestExplosureTime,float minThrehold) {
         motorIdle();
         vTaskDelay(200);
         printColorToRow();
+        oledPrint(++location,"Location",1);
         vTaskDelay(2000);
         motorForward(aim_speed/2);
         vTaskDelay(500);
