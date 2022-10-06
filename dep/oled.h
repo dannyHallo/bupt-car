@@ -6,7 +6,8 @@
 
 extern Adafruit_SSD1306 display(-1);
 
-void pinoutInitAndI2cConfigOled() {
+// set up display
+void initOled() {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   // display.setRotation(2);
 

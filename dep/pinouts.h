@@ -22,7 +22,7 @@
 #define PINOUT_RIGHT_MOTOR_CODER_1
 #define PINOUT_RIGHT_MOTOR_CODER_2
 
-#define PINOUT_SCL 22 // Oled
+#define PINOUT_SCL 22 // Oled & Color
 #define PINOUT_SDA 21
 
 #define PINOUT_E2A 19

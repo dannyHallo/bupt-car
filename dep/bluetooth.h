@@ -8,7 +8,8 @@
 BluetoothSerial serialBT;
 #endif
 
-void pinoutInitAndOpenBTSerialBluetooth() {
+// pinout init, open BTSerial
+void initBluetooth() {
 #ifdef BT_ON
   serialBT.begin("ESP32Test");
   Serial.println("Bluetooth configured, now you can pair it!");

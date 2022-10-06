@@ -16,6 +16,12 @@
     "unordered_map": "cpp",
     "vector": "cpp",
     "string_view": "cpp",
-    "initializer_list": "cpp"
+    "initializer_list": "cpp",
+    "list": "cpp",
+    "unordered_set": "cpp",
+    "regex": "cpp",
+    "bitset": "cpp",
+    "algorithm": "cpp",
+    "random": "cpp"
   }
 }

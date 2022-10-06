@@ -45,11 +45,6 @@
   (*(const unsigned char *)(addr)) ///< PROGMEM workaround for non-AVR
 #endif
 
-#if !defined(__ARM_ARCH) && !defined(ENERGIA) && !defined(ESP8266) &&          \
-    !defined(ESP32) && !defined(__arc__)
-#include <util/delay.h>
-#endif
-
 #include "Adafruit_SSD1306.h"
 #include "splash.h"
 #include "../Adafruit_GFX_Library/Adafruit_GFX.h"
