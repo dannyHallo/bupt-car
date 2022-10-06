@@ -17,6 +17,35 @@ TaskHandle_t Task2Handle;
 
 int command = -1;
 
+void printColorToRow(int row = 0) {
+    switch (getColor()) {
+    case COLOR_RED:
+        oledPrint("RED",row);
+        break;
+    case COLOR_YELLOW:
+        oledPrint("YELLOW",row);
+        break;
+    case COLOR_PINK:
+        oledPrint("PINK",row);
+        break;
+    case COLOR_WHITE:
+        oledPrint("WHITE",row);
+        break;
+    case COLOR_BLACK:
+        oledPrint("BLACK",row);
+        break;
+    case COLOR_GREEN:
+        oledPrint("GREEN",row);
+        break;
+    case COLOR_DARK_BLUE:
+        oledPrint("DARK_BLUE",row);
+        break;
+    case COLOR_BLUE:
+        oledPrint("BLUE",row);
+        break;
+    }
+}
+
 pid angelPID(angle_kp,angle_ki,angle_kd);
 
 void setup() {
@@ -119,34 +148,7 @@ void Task1(void* pvParameters) {
     }
 }
 
-void printColorToRow(int row = 0) {
-    switch (getColor()) {
-    case COLOR_RED:
-        oledPrint("RED",row);
-        break;
-    case COLOR_YELLOW:
-        oledPrint("YELLOW",row);
-        break;
-    case COLOR_PINK:
-        oledPrint("PINK",row);
-        break;
-    case COLOR_WHITE:
-        oledPrint("WHITE",row);
-        break;
-    case COLOR_BLACK:
-        oledPrint("BLACK",row);
-        break;
-    case COLOR_GREEN:
-        oledPrint("GREEN",row);
-        break;
-    case COLOR_DARK_BLUE:
-        oledPrint("DARK_BLUE",row);
-        break;
-    case COLOR_BLUE:
-        oledPrint("BLUE",row);
-        break;
-    }
-}
+
 void mainLoop1() {
     display.clearDisplay();
 
