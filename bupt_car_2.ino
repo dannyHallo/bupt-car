@@ -85,7 +85,11 @@ void autoTrack(int bestExplosureTime,float minThrehold) {
         printColorToRow();
         oledPrint(++location,"Location",1);
         vTaskDelay(2000);
-        motorForward(aim_speed/2);
+        if (motorEnable) {
+            motorForward(aim_speed/2);
+        } else {
+            motorIdle();
+        }
         vTaskDelay(500);
 
         break;
