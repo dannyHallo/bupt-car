@@ -10,16 +10,17 @@
 #include "dep/pid.h"
 #include "dep/pinouts.h"
 #include "dep/servo.h"
+#include "args.h"
 
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
 int command = -1;
 
-pid angelPID(1,0,0.1);
+pid angelPID(angle_kp,angle_ki,angle_kd);
 
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(serial_btr);
 
     pinoutInitBoardLed();
     initColor();
@@ -78,6 +79,12 @@ void autoTrack(int bestExplosureTime,float minThrehold) {
     case STATUS_PLATFORM:
         boardLedOn();
         motorIdle();
+        vTaskDelay(200);
+        printColorToRow();
+        vTaskDelay(2000);
+        motorForward(aim_speed/2);
+        vTaskDelay(500);
+
         break;
     case STATUS_NO_TRACK:
         boardLedOn();
@@ -92,7 +99,7 @@ void autoTrack(int bestExplosureTime,float minThrehold) {
     }
 
     if (motorEnable) {
-        motorForward(0.5);
+        motorForward(aim_speed);
     } else {
         motorIdle();
     }
