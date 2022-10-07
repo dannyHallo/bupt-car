@@ -94,11 +94,11 @@ void autoTrack(int explosureTime, int originalExplosureTime, float threhold) {
     break;
   }
   case STATUS_PLATFORM: {
+    servoWritePixel(64);
     motorBrake();
     delay(2000);
 
     // printColorToRow(0);
-    servoWritePixel(64);
     float motorAimSpeed = motorEnable ? aim_speed : 0;
     motorForward(motorAimSpeed);
 
