@@ -125,8 +125,10 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
 
         boardLedOn();
         oledPrint(++location,"Location",1);
+        oledFlush();
         vTaskDelay(200);
         printColorToRow();
+        oledFlush();
         vTaskDelay(2000);
         if (motorEnable) {
             motorForward(motorEnable ? aim_speed/3 : 0);
