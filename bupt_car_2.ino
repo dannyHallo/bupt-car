@@ -64,6 +64,8 @@ void assignTasks() {
 void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
     bool motorEnable = digitalRead(PINOUT_MOTOR_ON) ? true : false;
 
+
+
     int trackMidPixel = 0;
     int trackStatus = 0;
 
@@ -119,6 +121,8 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
         angelPID.reset();
 
         isUsingOled = true;
+
+
         boardLedOn();
         oledPrint(++location,"Location",1);
         vTaskDelay(200);
@@ -129,7 +133,7 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
         } else {
             motorIdle();
         }
-        vTaskDelay(280);
+        vTaskDelay(240);
         isUsingOled = false;
 
         break;
@@ -236,6 +240,8 @@ void Task2(void* pvParameters) {
 
                     autoTrack(thisTimeExplosureTime,bestRecord.explosureTime,bestRecord.threhold+0.2f);
                     oledFlush();
+                } else {
+                    vTaskDelay(100);
                 }
             }
         }
