@@ -13,8 +13,8 @@
 #define PWM_CHANNEL_RIGHT_MOTOR_BACK 5
 
 const int cMotorResolution = 16; // Max: 16 bit
-const int cDefaultPower = 25000;
-const int cMaximumPower = 40000;
+const int cDefaultPower = 24000;
+const int cMaximumPower = 32000;
 
 int currentPower;
 float maxResolution = 0;
