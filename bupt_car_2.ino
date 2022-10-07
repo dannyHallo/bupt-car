@@ -135,7 +135,16 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
         } else {
             motorIdle();
         }
-        vTaskDelay(160);
+        vTaskDelay(220);
+        // while (icount<3) {
+        //     processCCD(trackMidPixel,trackStatus,originalExplosureTime,threhold,true);
+        //     if (trackStatus==STATUS_PLATFORM) {
+        //         icount++;
+        //     } else {
+        //         icount = 0;
+        //     }
+        // }
+
         isUsingOled = false;
 
         break;
@@ -143,7 +152,7 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
 
     case STATUS_NO_TRACK:
         //boardLedOn();
-        motorIdle();
+        //motorIdle();
         // servoWritePixel(127);
         break;
 
