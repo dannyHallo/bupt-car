@@ -118,6 +118,7 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
         motorBrake();
         angelPID.reset();
 
+        isUsingOled = true;
         boardLedOn();
         oledPrint(++location,"Location",1);
         vTaskDelay(200);
@@ -128,7 +129,8 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
         } else {
             motorIdle();
         }
-        vTaskDelay(350);
+        vTaskDelay(280);
+        isUsingOled = false;
 
         break;
 
@@ -222,17 +224,19 @@ void Task2(void* pvParameters) {
             delay(1000);
 
             for (;;) {
-                display.clearDisplay();
+                if (!isUsingOled) {
+                    display.clearDisplay();
 
-                int prevTimeMs = getTime();
-                oledPrint(prevTimeMs,"time");
+                    int prevTimeMs = getTime();
+                    oledPrint(prevTimeMs,"time");
 
-                int thisTimeExplosureTime = bestRecord.explosureTime-prevTimeMs;
-                if (thisTimeExplosureTime<0)
-                    thisTimeExplosureTime = 0;
+                    int thisTimeExplosureTime = bestRecord.explosureTime-prevTimeMs;
+                    if (thisTimeExplosureTime<0)
+                        thisTimeExplosureTime = 0;
 
-                autoTrack(thisTimeExplosureTime,bestRecord.explosureTime,bestRecord.threhold+0.2f);
-                oledFlush();
+                    autoTrack(thisTimeExplosureTime,bestRecord.explosureTime,bestRecord.threhold+0.2f);
+                    oledFlush();
+                }
             }
         }
     }
