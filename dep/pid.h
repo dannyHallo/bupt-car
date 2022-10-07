@@ -41,6 +41,11 @@ public:
         return PID_value;
     }
 
+    void reset() {
+        I = 0;
+        previous_error = 0;
+    }
+
 private:
     float Kp = 0.9f,Ki = 0.1,Kd = 0.1;
     float P = 0,I = 0,D = 0,PID_value = 0;
