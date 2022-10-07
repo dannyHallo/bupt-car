@@ -121,7 +121,7 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
         angelPID.reset();
 
         isUsingOled = true;
-
+        display.clearDisplay();
 
         boardLedOn();
         oledPrint(++location,"Location",1);
@@ -135,7 +135,7 @@ void autoTrack(int explosureTime,int originalExplosureTime,float threhold) {
         } else {
             motorIdle();
         }
-        vTaskDelay(240);
+        vTaskDelay(160);
         isUsingOled = false;
 
         break;
