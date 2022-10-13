@@ -3,39 +3,36 @@
 #include "../lib/arduino-esp32/libraries/Wire/src/Wire.h"
 #include "boardLed.h"
 #include "math.h"
-#include "pinouts.h"
 #include "oled.h"
+#include "pinouts.h"
 
-#define COLOR_RED 0x01
-#define COLOR_YELLOW 0x02
-#define COLOR_PINK 0x04
-#define COLOR_WHITE 0x08
-#define COLOR_BLACK 0x10
-#define COLOR_GREEN 0x20
-#define COLOR_DARK_BLUE 0x40
-#define COLOR_BLUE 0x80
+#define COLOR_RED 0
+#define COLOR_GREEN 1
+#define COLOR_BLUE 2
+#define COLOR_YELLOW 3
+#define COLOR_EMPTY 4
 
-TwoWire* wire;
-const uint8_t colorSensorAddr = 0x5a; // 7 bit address: 0x5a (use this one); 8 bit address: 0xb4
-const uint8_t colorBufferAddr = 0x0f;
+const char* colorLookupArray[5] = {"RED", "GREEN", "BLUE", "YELLOW", "EMPTY"};
+
+const uint8_t colorSensorAddr  = 0x5a;
+const uint8_t colorBufferAddr  = 0x00;
 const long minimumSamplingTime = 100;
 
-long timeStamp1 = 0;
-long timeStamp2 = 0;
-uint8_t lastSampleResult;
+uint8_t rawBuff[6];
+uint16_t rgb[3];
+TwoWire* wire = &Wire;
 
 void setBrightness(uint8_t);
-bool requestBuffer(uint8_t deviceAddr,uint8_t bufferAddr,uint8_t* buffer,uint8_t bufferSize);
+bool requestBuffer(uint8_t deviceAddr, uint8_t bufferAddr, uint8_t* buffer, uint8_t bufferSize);
+int parseColor();
 
 void initColor() {
-  wire = &Wire;
-  //   wire->begin();     // Start master
   setBrightness(10); // Maximize the light
 }
 
 // Write communication test
-void testColorLoop() {
-  for (int b = 0; b<=10; b++) {
+void testColor() {
+  for (int b = 0; b <= 10; b++) {
     setBrightness(b);
     delay(200);
   }
@@ -43,12 +40,12 @@ void testColorLoop() {
 
 // (0 -> 10) (dim -> light)
 void setBrightness(uint8_t brightness) {
-  clamp(brightness,static_cast<uint8_t>(0),static_cast<uint8_t>(10));
+  clamp(brightness, static_cast<uint8_t>(0), static_cast<uint8_t>(10));
 
-  brightness = 10-brightness; // invert brightness to meet the module's need :(
+  brightness            = 10 - brightness; // invert brightness to meet the module's need :(
   uint8_t configCommand = 0x00;
 
-  configCommand |= brightness<<4;
+  configCommand |= brightness << 4;
 
   wire->beginTransmission(colorSensorAddr); // Call device
   wire->write(0x10);                        // Ask to Config
@@ -56,60 +53,78 @@ void setBrightness(uint8_t brightness) {
   wire->endTransmission();                  // Stop transmission
 }
 
-uint8_t getColor() {
-  timeStamp1 = millis();
-  if (timeStamp1-timeStamp2<minimumSamplingTime) {
-    return lastSampleResult;
+void getColor() {
+  // Resets the buffer
+  memset(rawBuff, 0, 6);
+
+  // Read buffers
+  for (uint8_t i = 0; i < 6; i++) {
+    requestBuffer(colorSensorAddr, colorBufferAddr + i, rawBuff + i, 1);
+    delay(10);
   }
-  timeStamp2 = timeStamp1;
-
-  uint8_t buffAddr = 0x0f;
-  uint8_t buff = 0;
-
-  requestBuffer(colorSensorAddr,colorBufferAddr,&buff,1);
-
-  lastSampleResult = buff;
-  return buff;
 }
 
-bool requestBuffer(uint8_t deviceAddr,uint8_t bufferAddr,uint8_t* buffer,uint8_t bufferSize) {
+bool requestBuffer(uint8_t deviceAddr, uint8_t bufferAddr, uint8_t* buffer, uint8_t bufferSize) {
   wire->beginTransmission(deviceAddr); // Call device
   wire->write(bufferAddr);             // Ask to Config
   wire->endTransmission(false);        // Stop transmission
 
-  wire->requestFrom(deviceAddr,bufferSize);
-  wire->readBytes(buffer,bufferSize);
+  wire->requestFrom(deviceAddr, bufferSize);
+  wire->readBytes(buffer, bufferSize);
 
   wire->endTransmission(); // Stop transmission
 
   return true;
 }
 
-void printColorToRow(int row = 0) {
-  switch (getColor()) {
-  case COLOR_RED:
-    oledPrint("RED",row);
-    break;
-  case COLOR_YELLOW:
-    oledPrint("YELLOW",row);
-    break;
-  case COLOR_PINK:
-    oledPrint("PINK",row);
-    break;
-  case COLOR_WHITE:
-    oledPrint("WHITE",row);
-    break;
-  case COLOR_BLACK:
-    oledPrint("BLACK",row);
-    break;
-  case COLOR_GREEN:
-    oledPrint("GREEN",row);
-    break;
-  case COLOR_DARK_BLUE:
-    oledPrint("DARK_BLUE",row);
-    break;
-  case COLOR_BLUE:
-    oledPrint("BLUE",row);
-    break;
+void getRGB(bool debug = false) {
+  getColor();
+
+  for (int i = 0; i < 3; i++) {
+    rgb[i] = (*(rawBuff + i * 2) << 8) & 0xff00;
+    rgb[i] |= *(rawBuff + i * 2 + 1);
+  }
+
+  if (debug) {
+    for (uint8_t i = 0; i < 3; i++) {
+      Serial.print(rgb[i], DEC);
+      Serial.println("  ");
+    }
+  }
+
+  oledClear();
+  oledPrint(static_cast<int>(rgb[0]), "R", 0);
+  oledPrint(static_cast<int>(rgb[1]), "G", 1);
+  oledPrint(static_cast<int>(rgb[2]), "B", 2);
+  oledPrint(colorLookupArray[parseColor()], 3);
+
+  oledFlush();
+}
+
+int parseColor() {
+  uint16_t maxVal  = 0;
+  uint16_t largest = 0;
+
+  for (int i = 0; i < 3; i++) {
+    if (rgb[i] > maxVal) {
+      maxVal  = rgb[i];
+      largest = i;
+    }
+  }
+
+  if (maxVal < 100)
+    return COLOR_EMPTY;
+
+  switch (largest) {
+  case 0:
+    if ((float)rgb[1] / (float)maxVal > 0.8f)
+      return COLOR_YELLOW;
+    return COLOR_RED;
+  case 1:
+    if ((float)rgb[0] / (float)maxVal > 0.8f)
+      return COLOR_YELLOW;
+    return COLOR_GREEN;
+  case 2:
+    return COLOR_BLUE;
   }
 }
