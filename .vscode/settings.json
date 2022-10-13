@@ -22,6 +22,8 @@
     "regex": "cpp",
     "bitset": "cpp",
     "algorithm": "cpp",
-    "random": "cpp"
+    "random": "cpp",
+    "memory": "cpp",
+    "optional": "cpp"
   }
 }

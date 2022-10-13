@@ -20,14 +20,39 @@ const long minimumSamplingTime = 100;
 
 uint8_t rawBuff[6];
 uint16_t rgb[3];
+uint16_t blankRGB[3];
+int outRGB[3];
+
 TwoWire* wire = &Wire;
 
-void setBrightness(uint8_t);
+void initColor();
+void colorSensorOn();
+void colorSensorOff();
+void testColor();
+void setBrightness(uint8_t brightness);
+void getColor();
 bool requestBuffer(uint8_t deviceAddr, uint8_t bufferAddr, uint8_t* buffer, uint8_t bufferSize);
+void getRGB(bool relativeVal = true);
 int parseColor();
 
-void initColor() {
-  setBrightness(10); // Maximize the light
+void initColor() { setBrightness(0); }
+void colorSensorOn() { setBrightness(10); }
+void colorSensorOff() { setBrightness(0); }
+
+void setupBlankColor() {
+  delay(400);
+  getColor();
+  delay(100);
+  getColor();
+
+  memcpy(blankRGB, rgb, sizeof(rgb[0]) * 3);
+
+  oledClear();
+  oledPrint(static_cast<int>(blankRGB[0]), "rawR", 0);
+  oledPrint(static_cast<int>(blankRGB[1]), "rawG", 1);
+  oledPrint(static_cast<int>(blankRGB[2]), "rawB", 2);
+  oledFlush();
+  delay(1000);
 }
 
 // Write communication test
@@ -62,6 +87,12 @@ void getColor() {
     requestBuffer(colorSensorAddr, colorBufferAddr + i, rawBuff + i, 1);
     delay(10);
   }
+
+  // Parse vals
+  for (int i = 0; i < 3; i++) {
+    rgb[i] = (*(rawBuff + i * 2) << 8) & 0xff00;
+    rgb[i] |= *(rawBuff + i * 2 + 1);
+  }
 }
 
 bool requestBuffer(uint8_t deviceAddr, uint8_t bufferAddr, uint8_t* buffer, uint8_t bufferSize) {
@@ -77,25 +108,18 @@ bool requestBuffer(uint8_t deviceAddr, uint8_t bufferAddr, uint8_t* buffer, uint
   return true;
 }
 
-void getRGB(bool debug = false) {
+void getRGB(bool relativeVal) {
   getColor();
 
   for (int i = 0; i < 3; i++) {
-    rgb[i] = (*(rawBuff + i * 2) << 8) & 0xff00;
-    rgb[i] |= *(rawBuff + i * 2 + 1);
-  }
-
-  if (debug) {
-    for (uint8_t i = 0; i < 3; i++) {
-      Serial.print(rgb[i], DEC);
-      Serial.println("  ");
-    }
+    outRGB[i] = static_cast<int>(rgb[i]) - static_cast<int>(blankRGB[i]);
+    outRGB[i] = (outRGB[i] >= 0) ? outRGB[i] : 0;
   }
 
   oledClear();
-  oledPrint(static_cast<int>(rgb[0]), "R", 0);
-  oledPrint(static_cast<int>(rgb[1]), "G", 1);
-  oledPrint(static_cast<int>(rgb[2]), "B", 2);
+  oledPrint(outRGB[0], "R", 0);
+  oledPrint(outRGB[1], "G", 1);
+  oledPrint(outRGB[2], "B", 2);
   oledPrint(colorLookupArray[parseColor()], 3);
 
   oledFlush();
@@ -106,22 +130,22 @@ int parseColor() {
   uint16_t largest = 0;
 
   for (int i = 0; i < 3; i++) {
-    if (rgb[i] > maxVal) {
-      maxVal  = rgb[i];
+    if (outRGB[i] > maxVal) {
+      maxVal  = outRGB[i];
       largest = i;
     }
   }
 
-  if (maxVal < 100)
+  if (maxVal < 40)
     return COLOR_EMPTY;
 
   switch (largest) {
   case 0:
-    if ((float)rgb[1] / (float)maxVal > 0.8f)
+    if ((float)outRGB[1] / (float)maxVal > 0.8f)
       return COLOR_YELLOW;
     return COLOR_RED;
   case 1:
-    if ((float)rgb[0] / (float)maxVal > 0.8f)
+    if ((float)outRGB[0] / (float)maxVal > 0.8f)
       return COLOR_YELLOW;
     return COLOR_GREEN;
   case 2:

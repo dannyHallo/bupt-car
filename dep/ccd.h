@@ -5,6 +5,8 @@
 #include "oled.h"
 #include "pinouts.h"
 
+#define DEFAULT 0
+
 const int STATUS_NORMAL   = 0;
 const int STATUS_NO_TRACK = 1;
 const int STATUS_PLATFORM = 2;
@@ -147,12 +149,15 @@ void parseBinaryVals(int& blackNum, int& whiteNum, bool debug = false) {
   }
 }
 
-void linearToBinary(int minVal, int maxVal, float usingThrehold) {
+void linearToBinary(int minVal, int maxVal, int partingAvg = DEFAULT) {
   memset(binaryData, 0, sizeof(binaryData));
 
+  if (partingAvg == DEFAULT) {
+    partingAvg = (minVal + maxVal) / 2;
+  }
+
   for (int i = cCountStart; i <= cCountEnd; i++) {
-    binaryData[i] =
-        (float(linearData[i]) < (minVal + (maxVal - minVal) * usingThrehold)) ? true : false;
+    binaryData[i] = (linearData[i] < partingAvg) ? true : false;
   }
 }
 
@@ -225,17 +230,13 @@ struct explosureRecord {
   int maxVal;
   int avgVal;
   int explosureTime;
-  float threhold;
+  bool isValid;
   float contrast;
 };
 
-void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bool& bestAvailable,
-                          bool debug = false) {
-  cameraIsBlocked = false;
-  bestAvailable   = false;
-
-  // Clear previous val
-  captrueCCD(cDefaultExplosureTime);
+void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bool debug = false) {
+  cameraIsBlocked    = false;
+  bestRecord.isValid = false;
 
   int recordSize = (cExplosureTimeEnd - cExplosureTimeStart) / cExplosureTimePropagation + 1;
   float threholdsForEachExplosureTime[recordSize];
@@ -250,10 +251,10 @@ void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bo
     int& thisMinVal        = thisRecord.minVal;
     int& thisMaxVal        = thisRecord.maxVal;
     int& thisAvgVal        = thisRecord.avgVal;
-    float& thisThrehold    = thisRecord.threhold;
+    bool& thisIsValid      = thisRecord.isValid;
     float& thisContrast    = thisRecord.contrast;
 
-    thisThrehold      = -1;
+    thisIsValid       = false;
     thisExplosureTime = cExplosureTimeStart + cExplosureTimePropagation * i;
 
     if (debug) {
@@ -263,35 +264,30 @@ void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bo
 
     // Capture
     captrueCCD(thisExplosureTime);
-    captrueCCD(thisExplosureTime);
+    captrueCCD(0);
 
     parseLinearVals(thisMinVal, thisMaxVal, thisAvgVal, debug);
-    thisContrast = (thisMaxVal == 0) ? 0 : float(thisMinVal) / float(thisMaxVal);
+    thisContrast = (thisMaxVal == 0) ? 1 : float(thisMinVal) / float(thisMaxVal);
 
-    // Find track dynamically
-    for (float testThrehold = 0.0f; testThrehold < 1.0f;
-         testThrehold += cThreholdSearchingPropagationInit) {
-      linearToBinary(thisMinVal, thisMaxVal, testThrehold);
-      int trackMidPixel = getTrackMidPixel();
+    linearToBinary(thisMinVal, thisMaxVal);
+    int trackMidPixel = getTrackMidPixel();
 
-      if (trackMidPixel != -1) {
-        thisThrehold = testThrehold;
+    if (trackMidPixel != -1) {
+      thisIsValid = true;
 
-        if (debug) {
-          drawOneHot(trackMidPixel);
-          printCCDLinearData(thisMaxVal);
-          printCCDBinaryRawData();
-          printCCDOneHotData();
-        }
-        break;
+      if (debug) {
+        drawOneHot(trackMidPixel);
+        printCCDLinearData(thisMaxVal);
+        printCCDBinaryRawData();
+        printCCDOneHotData();
       }
     }
-    if (thisThrehold == -1 && debug)
+
+    if (!thisIsValid && debug)
       Serial.println("Failed to find threhold for this explosure time!");
   }
 
-  // Find explosure time with minimum ratio
-  float threhold    = 1.0f;
+  // Loop through all records and select the one with best contrast (smallest)
   float minContrast = 1.0f;
   float maxContrast = 0.0f;
 
@@ -302,66 +298,63 @@ void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bo
     int& thisMinVal        = thisRecord.minVal;
     int& thisMaxVal        = thisRecord.maxVal;
     int& thisAvgVal        = thisRecord.avgVal;
-    float& thisThrehold    = thisRecord.threhold;
+    bool& thisIsValid      = thisRecord.isValid;
     float& thisContrast    = thisRecord.contrast;
 
-    if (thisThrehold == -1)
+    if (!thisIsValid)
       continue;
 
     Serial.print("explosure_time: ");
     Serial.print(thisExplosureTime);
-    Serial.print("  threhold: ");
-    Serial.print(thisThrehold);
     Serial.print("  contrast: ");
     Serial.println(thisContrast);
 
-    if (thisThrehold < threhold) {
-      threhold = thisThrehold;
+    if (thisContrast < minContrast) {
+      minContrast = thisContrast;
       {
         bestRecord.explosureTime = thisExplosureTime;
         bestRecord.minVal        = thisMinVal;
         bestRecord.maxVal        = thisMaxVal;
         bestRecord.avgVal        = thisAvgVal;
-        bestRecord.threhold      = thisThrehold;
+        bestRecord.isValid       = true;
         bestRecord.contrast      = thisContrast;
       }
-      bestAvailable = true;
     }
-
-    if (thisContrast < minContrast)
-      minContrast = thisContrast;
 
     if (thisContrast > maxContrast)
       maxContrast = thisContrast;
   }
 
   // Output
-  cameraIsBlocked = !bestAvailable ||
+  cameraIsBlocked = !bestRecord.isValid ||
                     (minContrast < 0.02 && maxContrast - minContrast > cMinMaxRatioDeltaBlocked);
 }
 
-void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime, float threhold,
+void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime, int average,
                 bool debug = false) {
 
   tracingStatus = STATUS_NORMAL;
 
   // Capture
   captrueCCD(explosureTime);
+  captrueCCD(0);
 
   int minVal, maxVal, avgVal;
   parseLinearVals(minVal, maxVal, avgVal, debug);
 
-  linearToBinary(minVal, maxVal, threhold);
+  linearToBinary(minVal, maxVal, average);
+
+  if (debug) {
+    printCCDLinearData(maxVal);
+    printCCDBinaryRawData();
+  }
 
   int blackNum, whiteNum;
   parseBinaryVals(blackNum, whiteNum);
 
   if (blackNum > whiteNum) {
-    boardLedOn();
     tracingStatus = STATUS_PLATFORM;
     return;
-  } else {
-    boardLedOff();
   }
 
   trackMidPixel = getTrackMidPixel();
@@ -376,8 +369,6 @@ void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime, float
   }
 
   if (debug) {
-    printCCDLinearData(maxVal);
-    printCCDBinaryRawData();
     printCCDOneHotData();
   }
 

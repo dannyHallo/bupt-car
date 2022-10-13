@@ -15,25 +15,23 @@
 TaskHandle_t Task1Handle;
 TaskHandle_t Task2Handle;
 
-int command = -1;
-
+int command  = -1;
 int location = 0;
 
 pid angelPID(angle_kp, angle_ki, angle_kd);
 
 void setup() {
   Serial.begin(serial_btr);
+  Serial.println("-- startup --");
 
   pinoutInitBoardLed();
+  initOled();
   initColor();
   initCCD();
   initServo();
   initMotor();
   initBluetooth();
-  initOled();
   pinMode(PINOUT_MOTOR_ON, INPUT_PULLDOWN);
-
-  Serial.println("Booting now...");
 
   oledCountdown("Booting", 500, 1);
 
@@ -43,7 +41,7 @@ void setup() {
 void assignTasks() {
   xTaskCreatePinnedToCore(Task1,        // Task function
                           "Task1",      // Task name
-                          65535,        // Stack size
+                          2000,         // Stack size
                           NULL,         // Parameter
                           1,            // Priority
                           &Task1Handle, // Task handle to keep track of created task
@@ -52,7 +50,7 @@ void assignTasks() {
 
   xTaskCreatePinnedToCore(Task2,        // Task function
                           "Task2",      // Task name
-                          65535,        // Stack size
+                          2000,         // Stack size
                           NULL,         // Parameter
                           1,            // Priority
                           &Task2Handle, // Task handle to keep track of created task
@@ -60,13 +58,14 @@ void assignTasks() {
   );
 }
 
-void autoTrack(int explosureTime, int originalExplosureTime, float threhold) {
-  bool motorEnable = digitalRead(PINOUT_MOTOR_ON) ? true : false;
+void autoTrack(explosureRecord& bestRecord) {
+  bool motorEnable    = digitalRead(PINOUT_MOTOR_ON) ? true : false;
+  float motorAimSpeed = motorEnable ? aim_speed : 0;
 
   int trackMidPixel = 0;
   int trackStatus   = 0;
 
-  processCCD(trackMidPixel, trackStatus, explosureTime, threhold, true);
+  processCCD(trackMidPixel, trackStatus, bestRecord.explosureTime, bestRecord.avgVal, true);
 
   // Print status only
   switch (trackStatus) {
@@ -75,74 +74,45 @@ void autoTrack(int explosureTime, int originalExplosureTime, float threhold) {
     oledPrint("tracking", 1);
     break;
   case STATUS_NO_TRACK:
-    boardLedOff();
+    boardLedOn();
     oledPrint("notrack", 1);
     break;
   case STATUS_PLATFORM:
-    boardLedOn();
+    boardLedOff();
     oledPrint("platform", 1);
     break;
   }
 
-  float motorAimSpeed = motorEnable ? aim_speed : 0;
-
   switch (trackStatus) {
   case STATUS_NORMAL:
-    boardLedOff();
     servoWritePixel(angelPID.update(trackMidPixel - 64) + 64);
-
     motorForward(motorAimSpeed);
     break;
 
-    // case STATUS_PLATFORM: {
-    //     servoWritePixel(64);
-    //     motorBrake();
-    //     delay(2000);
-
-    //     // printColorToRow(0);
-    //     float motorAimSpeed = motorEnable ? aim_speed : 0;
-    //     motorForward(motorAimSpeed);
-
-    //     while (trackStatus==STATUS_PLATFORM)
-    //         processCCD(trackMidPixel,trackStatus,originalExplosureTime,threhold,true);
-
-    //     break;
-    // }
-
   case STATUS_PLATFORM:
-
+  case STATUS_NO_TRACK:
     servoWritePixel(64);
     motorBrake();
     angelPID.reset();
 
-    boardLedOn();
     display.clearDisplay();
     oledPrint(++location, "Location", 1);
     oledFlush();
 
     delay(2000);
-    oledCountdown("Capturing", 1000, 1);
-
+    colorSensorOn();
+    oledCountdown("Capturing", 600, 1);
     getRGB();
+    colorSensorOff();
     delay(2000);
 
-    if (motorEnable) {
-      motorForward(motorEnable ? aim_speed / 3 : 0);
-    } else {
-      motorIdle();
-    }
-    //     while (trackStatus==STATUS_PLATFORM)
-    //         processCCD(trackMidPixel,trackStatus,originalExplosureTime,threhold,true);
-    delay(220);
-    break;
+    motorForward(motorAimSpeed / 3);
 
-  case STATUS_NO_TRACK:
-    // boardLedOn();
-    // motorIdle();
-    //  servoWritePixel(127);
+    delay(800);
     break;
 
   default:
+    angelPID.reset();
     motorIdle();
     break;
   }
@@ -153,20 +123,18 @@ void loop() { delay(1000); }
 
 void Task1(void* pvParameters) {
   for (;;) {
-    if (Serial.available()) {
-      btSend(Serial.read());
-    }
-    command = btRecieve();
-    vTaskDelay(20);
+    //   command = btRecieve();
+    //   delay(20);
+    delay(1000);
   }
 }
 
-void prepareCCD(bool& cameraIsBlocked, bool& bestAvailable, explosureRecord& bestRecord) {
+void prepareCCD(bool& cameraIsBlocked, bool& recordAvailable, explosureRecord& bestRecord) {
   display.clearDisplay();
   cameraIsBlocked = false;
-  bestAvailable   = false;
 
-  getBestExplosureTime(bestRecord, cameraIsBlocked, bestAvailable, false);
+  getBestExplosureTime(bestRecord, cameraIsBlocked, true);
+  recordAvailable = bestRecord.isValid;
 
   Serial.println("----------------------------------------");
   if (cameraIsBlocked) {
@@ -175,11 +143,11 @@ void prepareCCD(bool& cameraIsBlocked, bool& bestAvailable, explosureRecord& bes
     Serial.println("tracking mode activated");
   }
 
-  if (bestAvailable) {
+  if (recordAvailable) {
     Serial.print("best explosure time: ");
     Serial.print(bestRecord.explosureTime);
-    Serial.print(" with minimum ratio: ");
-    Serial.println(bestRecord.threhold);
+    Serial.print(" with parting avg: ");
+    Serial.println(bestRecord.avgVal);
   } else {
     Serial.println("no available record");
   }
@@ -187,7 +155,7 @@ void prepareCCD(bool& cameraIsBlocked, bool& bestAvailable, explosureRecord& bes
   Serial.println("----------------------------------------");
 
   oledPrint(bestRecord.explosureTime, "expl", 0);
-  oledPrint(bestRecord.threhold, "thre", 1);
+  oledPrint(bestRecord.avgVal, "parting avg", 1);
   oledFlush();
   delay(2000);
   display.clearDisplay();
@@ -204,36 +172,44 @@ int getTime() {
 }
 
 void Task2(void* pvParameters) {
-  for (;;) {
-    bool cameraIsBlocked, bestAvailable;
-    explosureRecord bestRecord;
-    prepareCCD(cameraIsBlocked, bestAvailable, bestRecord);
+  colorSensorOn();
+  setupBlankColor();
 
-    if (cameraIsBlocked) {
-      oledPrint("BT MODE", 1);
+  //   for (;;) {
+  //     btSend(123);
+  //     btSend("hello!");
+  //     flipBoardLed();
+  //     delay(1000);
+  //   }
+
+  bool cameraIsBlocked, recordAvailable;
+  explosureRecord bestRecord;
+  prepareCCD(cameraIsBlocked, recordAvailable, bestRecord);
+
+  if (cameraIsBlocked) {
+    oledPrint("BT MODE", 1);
+    oledFlush();
+
+    for (;;) {
+      parseCommands(command);
+    }
+  } else {
+    oledPrint("TRACK MODE", 1);
+    oledFlush();
+    delay(1000);
+
+    for (;;) {
+      display.clearDisplay();
+
+      int prevTimeMs = getTime();
+      oledPrint(prevTimeMs, "time");
+
+      //   int thisTimeExplosureTime = bestRecord.explosureTime - prevTimeMs;
+      //   if (thisTimeExplosureTime < 0)
+      //     thisTimeExplosureTime = 0;
+
+      autoTrack(bestRecord);
       oledFlush();
-
-      for (;;) {
-        parseCommands(command);
-      }
-    } else {
-      oledPrint("TRACK MODE", 1);
-      oledFlush();
-      delay(1000);
-
-      for (;;) {
-        display.clearDisplay();
-
-        int prevTimeMs = getTime();
-        oledPrint(prevTimeMs, "time");
-
-        int thisTimeExplosureTime = bestRecord.explosureTime - prevTimeMs;
-        if (thisTimeExplosureTime < 0)
-          thisTimeExplosureTime = 0;
-
-        autoTrack(thisTimeExplosureTime, bestRecord.explosureTime, bestRecord.threhold + 0.2f);
-        oledFlush();
-      }
     }
   }
 }

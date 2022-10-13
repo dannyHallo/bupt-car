@@ -11,16 +11,28 @@ BluetoothSerial serialBT;
 // pinout init, open BTSerial
 void initBluetooth() {
 #ifdef BT_ON
-  serialBT.begin("ESP32Test");
+  serialBT.begin("a costly car");
   Serial.println("Bluetooth configured, now you can pair it!");
 #endif
 }
 
 void btSend(int message) {
 #ifdef BT_ON
-  serialBT.write(message);
+  serialBT.println(message);
 #endif
 }
+
+void btSend(char* message) {
+#ifdef BT_ON
+  serialBT.println(message);
+#endif
+}
+
+// void btSend(const char* message) {
+// #ifdef BT_ON
+//   serialBT.write(message);
+// #endif
+// }
 
 int btRecieve() {
 #ifdef BT_ON
