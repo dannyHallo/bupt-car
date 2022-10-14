@@ -1,6 +1,8 @@
 import serial
 import json
 
+# x=input("Please input the port number:")
+
 car = serial.Serial("COM9")
 
 print("connected to: " + car.name)
