@@ -36,10 +36,12 @@ void btSend(char* message) {
 
 int btRecieve() {
 #ifdef BT_ON
+  //while (true) {
   if (serialBT.available()) {
     int message = serialBT.read();
     return message;
   }
+  //}
 #endif
   return -1;
 }
