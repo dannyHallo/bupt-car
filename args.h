@@ -1,4 +1,7 @@
 #pragma once
+
+#define BT_ON
+
 // paraments change frequently
 
 const int serial_btr = 115200;
@@ -15,3 +18,5 @@ const float angle_kd = 0.1;
 const float speed_kp = 8e4;
 const float speed_ki = 1e4;
 const float speed_kd = 1e4;
+
+const int platform_num = 4;
