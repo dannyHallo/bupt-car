@@ -3,7 +3,7 @@
 
 const int serial_btr = 115200;
 
-const float aim_speed = 0.25;
+const float aim_speed = 0.5;
 
 // angle pid
 const float angle_kp = 1;
