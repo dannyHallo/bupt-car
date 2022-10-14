@@ -17,10 +17,10 @@ public:
         package.count = count;
     }
     char* encode() {
-        char* data = (char*)malloc(sizeof(bt_package));
-        memcpy(data,&package,sizeof(bt_package));
-        return data;
+        sprintf(encode_data,"%d,%d,%d,%d,%d,%s",package.count,package.cargo_type[0],package.cargo_type[1],package.cargo_type[2],package.cargo_type[3],package.additional_info);
+        return encode_data;
     }
 private:
     bt_package package;
+    char encode_data[128];
 };
