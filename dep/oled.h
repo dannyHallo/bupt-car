@@ -12,6 +12,7 @@ void initOled();
 void oledPrint(const char* str, const int row = 0);
 void oledPrint(const int val, const char* hint = "Val", const int row = 0);
 void oledPrint(const float val, const char* hint = "Val", const int row = 0);
+void oledPrint(const char* hint1, const int i1, const char* hint2, const int i2, const int row = 0);
 void oledPrintAndFlush(const char* str, const int row = 0);
 void oledCountdown(std::string hint, const int delayMs = 500, const int row = 0);
 void oledClear();
@@ -51,6 +52,14 @@ void oledPrint(const float val, const char* hint, const int row) {
   display.setCursor(0, cLineSpacing * row);
   char str[100];
   sprintf(str, "%s: %.2f", hint, val);
+  display.println(str);
+}
+
+void oledPrint(const char* hint1, const int i1, const char* hint2, const int i2,
+               const int row) {
+  display.setCursor(0, cLineSpacing * row);
+  char str[100];
+  sprintf(str, "%s: %d  %s: %d", hint1, i1, hint2, i2);
   display.println(str);
 }
 

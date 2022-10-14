@@ -135,7 +135,7 @@ void parseLinearVals(int& minVal, int& maxVal, int& avgVal, bool debug = false) 
   }
 }
 
-void parseBinaryVals(int& blackNum, int& whiteNum, bool debug = false) {
+void parseBinaryVals(int& blackNum, int& whiteNum, int& totalNum, bool debug = false) {
   blackNum = whiteNum = 0;
 
   for (int i = cCountStart; i <= cCountEnd; i++) {
@@ -147,14 +147,14 @@ void parseBinaryVals(int& blackNum, int& whiteNum, bool debug = false) {
       whiteNum++;
     }
   }
+
+  totalNum = blackNum + whiteNum;
 }
 
-void linearToBinary(int minVal, int maxVal, int partingAvg = DEFAULT) {
+void linearToBinary(int minVal, int maxVal, int partingAvg = 0) {
   memset(binaryData, 0, sizeof(binaryData));
 
-  if (partingAvg == DEFAULT) {
-    partingAvg = (minVal + maxVal) / 2;
-  }
+  partingAvg = (partingAvg == 0) ? (minVal + maxVal) / 2 : partingAvg;
 
   for (int i = cCountStart; i <= cCountEnd; i++) {
     binaryData[i] = (linearData[i] < partingAvg) ? true : false;
@@ -330,29 +330,36 @@ void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bo
                     (minContrast < 0.02 && maxContrast - minContrast > cMinMaxRatioDeltaBlocked);
 }
 
-void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime, int average,
-                bool debug = false) {
+int lastAvailableAverage = 0;
+
+void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime,
+                bool resetAndExplosure = false, bool debug = false) {
 
   tracingStatus = STATUS_NORMAL;
 
   // Capture
-  captrueCCD(explosureTime);
-  captrueCCD(0);
+  if (resetAndExplosure) {
+    captrueCCD(explosureTime);
+    captrueCCD(0);
+  } else {
+    captrueCCD(explosureTime);
+  }
 
   int minVal, maxVal, avgVal;
   parseLinearVals(minVal, maxVal, avgVal, debug);
-
-  linearToBinary(minVal, maxVal, average);
+  linearToBinary(minVal, maxVal, lastAvailableAverage);
 
   if (debug) {
     printCCDLinearData(maxVal);
     printCCDBinaryRawData();
   }
 
-  int blackNum, whiteNum;
-  parseBinaryVals(blackNum, whiteNum);
+  int blackNum, whiteNum, totalNum;
+  parseBinaryVals(blackNum, whiteNum, totalNum);
 
-  if (blackNum > whiteNum) {
+  oledPrint("bl", blackNum, "wh", whiteNum, 2);
+
+  if (blackNum > int(totalNum * 0.7f)) {
     tracingStatus = STATUS_PLATFORM;
     return;
   }
@@ -367,6 +374,9 @@ void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime, int a
     tracingStatus = STATUS_NO_TRACK;
     return;
   }
+
+  //   if (lastAvailableAverage == 0)
+  lastAvailableAverage = avgVal;
 
   if (debug) {
     printCCDOneHotData();
