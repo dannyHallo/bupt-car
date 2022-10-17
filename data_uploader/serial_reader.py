@@ -1,3 +1,4 @@
+import datetime
 import serial
 import json
 import xml.etree.ElementTree as ET
@@ -14,9 +15,13 @@ else:
 
 cargo = [0 for i in range(4)]
 
+new_xml_name = "cargo"+datetime.datetime.now().strftime("%Y%m%d%H%M%S")+".xml"
+init = ET.parse('cargo_empty.xml')
+init.write("xmls/"+new_xml_name)
+
 
 def append_xml(goodID, goodName, position, type, Robot_robotID):
-    tree = ET.parse('./cargo.xml')
+    tree = ET.parse("xmls/"+new_xml_name)
     root = tree.getroot()
     cargo = ET.SubElement(root, 'cargo')
     cargo.set('goodID', goodID)
@@ -24,7 +29,7 @@ def append_xml(goodID, goodName, position, type, Robot_robotID):
     ET.SubElement(cargo, 'position').text = position
     ET.SubElement(cargo, 'type').text = type
     ET.SubElement(cargo, 'Robot_robotID').text = Robot_robotID
-    tree.write('./cargo.xml')
+    tree.write("xmls/"+new_xml_name)
 
 
 def int_2_alphabet(a):
@@ -33,7 +38,8 @@ def int_2_alphabet(a):
     return str(chr(b+65))+str(chr(c+65))
 
 
-while True:
+# while True:
+for j in range(4):
     if debug:
         count, cargo[0], cargo[1], cargo[2], cargo[3], additional = string.decode().split(
             ',')
@@ -50,4 +56,5 @@ while True:
 
     print(cargo)
 
-car.close()
+if not debug:
+    car.close()

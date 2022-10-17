@@ -1,0 +1,98 @@
+<root>
+    <cargo goodID="20">
+        <goodName>idontknow</goodName>
+        <position>0</position>
+        <type>3</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="21">
+        <goodName>idontknow</goodName>
+        <position>1</position>
+        <type>0</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="22">
+        <goodName>idontknow</goodName>
+        <position>2</position>
+        <type>4</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="23">
+        <goodName>idontknow</goodName>
+        <position>3</position>
+        <type>2</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="20">
+        <goodName>idontknow</goodName>
+        <position>0</position>
+        <type>3</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="21">
+        <goodName>idontknow</goodName>
+        <position>1</position>
+        <type>0</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="22">
+        <goodName>idontknow</goodName>
+        <position>2</position>
+        <type>4</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="23">
+        <goodName>idontknow</goodName>
+        <position>3</position>
+        <type>2</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="20">
+        <goodName>idontknow</goodName>
+        <position>0</position>
+        <type>3</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="21">
+        <goodName>idontknow</goodName>
+        <position>1</position>
+        <type>0</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="22">
+        <goodName>idontknow</goodName>
+        <position>2</position>
+        <type>4</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="23">
+        <goodName>idontknow</goodName>
+        <position>3</position>
+        <type>2</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="20">
+        <goodName>idontknow</goodName>
+        <position>0</position>
+        <type>3</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="21">
+        <goodName>idontknow</goodName>
+        <position>1</position>
+        <type>0</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="22">
+        <goodName>idontknow</goodName>
+        <position>2</position>
+        <type>4</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+    <cargo goodID="23">
+        <goodName>idontknow</goodName>
+        <position>3</position>
+        <type>2</type>
+        <Robot_robotID>001</Robot_robotID>
+    </cargo>
+</root>
