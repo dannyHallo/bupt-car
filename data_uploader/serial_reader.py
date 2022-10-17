@@ -38,23 +38,26 @@ def int_2_alphabet(a):
     return str(chr(b+65))+str(chr(c+65))
 
 
-while True:
-# for j in range(4):
-    if debug:
-        count, cargo[0], cargo[1], cargo[2], cargo[3], additional = string.decode().split(
-            ',')
-    else:
-        count, cargo[0], cargo[1], cargo[2], cargo[3], additional = car.readline(
-        ).decode().split(',')
+try:
+    while True:
+        # for j in range(4):
+        if debug:
+            count, cargo[0], cargo[1], cargo[2], cargo[3], additional = string.decode().split(
+                ',')
+        else:
+            count, cargo[0], cargo[1], cargo[2], cargo[3], additional = car.readline(
+            ).decode().split(',')
 
-    count = int(count)
-    cargo = list(map(int, cargo))
-    # raw = {"count": count, "cargo": cargo, "additional": additional}
-    # data = json.dumps(raw)
-    for i in range(len(cargo)):
-        append_xml(str(count*10+i), "idontknow", str(i), str(cargo[i]), "001")
+        count = int(count)
+        cargo = list(map(int, cargo))
+        # raw = {"count": count, "cargo": cargo, "additional": additional}
+        # data = json.dumps(raw)
+        for i in range(len(cargo)):
+            append_xml(str(count*10+i), "idontknow",
+                       str(i), str(cargo[i]), "001")
 
-    print(cargo)
+        print(cargo)
 
-if not debug:
-    car.close()
+except KeyboardInterrupt:
+    if not debug:
+        car.close()
