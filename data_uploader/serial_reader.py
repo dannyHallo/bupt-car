@@ -38,8 +38,8 @@ def int_2_alphabet(a):
     return str(chr(b+65))+str(chr(c+65))
 
 
-# while True:
-for j in range(4):
+while True:
+# for j in range(4):
     if debug:
         count, cargo[0], cargo[1], cargo[2], cargo[3], additional = string.decode().split(
             ',')
