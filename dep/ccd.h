@@ -7,6 +7,7 @@
 
 #define DEFAULT 0
 
+// status definitions
 const int STATUS_NORMAL   = 0;
 const int STATUS_NO_TRACK = 1;
 const int STATUS_PLATFORM = 2;
@@ -39,12 +40,24 @@ const float cMinMaxRatioDeltaBlocked = 0.6f;
 // Solid Black Line Detection
 const float cBlockingConditionRatio = 0.5f;
 
+// buffers allocated statically
 int linearData[cNumPixels]{};
 bool binaryData[cNumPixels]{};
 bool binaryOnehotData[cNumPixels]{};
 
 int avgMarkingVal = 0;
 
+// the struct definition of the explosure record, contains is as below
+struct explosureRecord {
+  int minVal;
+  int maxVal;
+  int avgVal;
+  int explosureTime;
+  bool isValid;
+  float contrast;
+};
+
+// initialization function
 void initCCD() {
   pinMode(PINOUT_CCD_SI, OUTPUT);
   pinMode(PINOUT_CCD_CLK, OUTPUT);
@@ -54,6 +67,7 @@ void initCCD() {
   digitalWrite(PINOUT_CCD_CLK, LOW); // IDLE state
 }
 
+// the real function to capture the pixel values from the ccd hardware device
 void captrueCCD(int explosureTimeMs) {
   digitalWrite(PINOUT_CCD_CLK, LOW);
   delayMicroseconds(1);
@@ -85,6 +99,7 @@ void captrueCCD(int explosureTimeMs) {
   delay(explosureTimeMs);
 }
 
+// debug function: print the linear data to serial
 void printCCDLinearData(int maxVal) {
   for (int i = 0; i < cNumPixels; i++) {
     int t = floor(float(linearData[i]) / float(maxVal) * 10.0f - 0.1f);
@@ -93,6 +108,7 @@ void printCCDLinearData(int maxVal) {
   Serial.println();
 }
 
+// debug function: print the binary data to serial
 void printCCDBinaryRawData() {
   for (int i = 0; i < cNumPixels; i++) {
     char c = binaryData[i] ? 'x' : '-';
@@ -101,6 +117,7 @@ void printCCDBinaryRawData() {
   Serial.println();
 }
 
+// debug function: print the one ot data, indicating the center of the track, to serial
 void printCCDOneHotData() {
   for (int i = 0; i < cNumPixels; i++) {
     char c = binaryOnehotData[i] ? '^' : ' ';
@@ -109,6 +126,7 @@ void printCCDOneHotData() {
   Serial.println();
 }
 
+// loop through all linear values, and get the maximum & minimum value from it
 void parseLinearVals(int& minVal, int& maxVal, int& avgVal, bool debug = false) {
   maxVal = 0;
   minVal = 1e6;
@@ -135,6 +153,7 @@ void parseLinearVals(int& minVal, int& maxVal, int& avgVal, bool debug = false) 
   }
 }
 
+// get the black and white pixel num from the binary array
 void parseBinaryVals(int& blackNum, int& whiteNum, int& totalNum, bool debug = false) {
   blackNum = whiteNum = 0;
 
@@ -151,6 +170,7 @@ void parseBinaryVals(int& blackNum, int& whiteNum, int& totalNum, bool debug = f
   totalNum = blackNum + whiteNum;
 }
 
+// the function to convert linear (raw) data to binary data
 void linearToBinary(int minVal, int maxVal, int partingAvg = 0) {
   memset(binaryData, 0, sizeof(binaryData));
 
@@ -161,6 +181,7 @@ void linearToBinary(int minVal, int maxVal, int partingAvg = 0) {
   }
 }
 
+// create one hot data from the point
 void drawOneHot(int point) {
   for (int i = 0; i < cNumPixels; i++) {
     if (i == point) {
@@ -171,6 +192,7 @@ void drawOneHot(int point) {
   }
 }
 
+// the core function of the ccd parsing logic:
 int getTrackMidPixel() {
   int accumulatedDarkPixel = 0;
 
@@ -178,6 +200,9 @@ int getTrackMidPixel() {
   int trackRightPixel = -1;
   int trackMidPixel   = -1;
 
+  // parse binary data from left to right, and get the nearset black line from left, if the line
+  // width meets the requirement, then record the mid point of this black line to be the track mid
+  // pixel
   for (int i = cCountStart; i <= cCountEnd; i++) {
     bool currentPixel = binaryData[i];
 
@@ -225,15 +250,9 @@ int getTrackMidPixel() {
   return trackMidPixel;
 }
 
-struct explosureRecord {
-  int minVal;
-  int maxVal;
-  int avgVal;
-  int explosureTime;
-  bool isValid;
-  float contrast;
-};
-
+// function excecuted once a power-on: get the best explosure time
+// we get the best explosure time by testing every possible explosure time, and find the t with
+// highest contrast (max / min)
 void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bool debug = false) {
   cameraIsBlocked    = false;
   bestRecord.isValid = false;
@@ -332,6 +351,7 @@ void getBestExplosureTime(explosureRecord& bestRecord, bool& cameraIsBlocked, bo
 
 int lastAvailableAverage = 0;
 
+// the function to fetch track mid pixel, during normal tracking
 void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime,
                 bool resetAndExplosure = false, bool debug = false) {
 
@@ -345,8 +365,10 @@ void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime,
     captrueCCD(explosureTime);
   }
 
+  // get min max avg values
   int minVal, maxVal, avgVal;
   parseLinearVals(minVal, maxVal, avgVal, debug);
+  // use the values obtained above to convert the linear value to binary
   linearToBinary(minVal, maxVal, lastAvailableAverage);
 
   if (debug) {
@@ -354,11 +376,14 @@ void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime,
     printCCDBinaryRawData();
   }
 
+  // get the parsed black / white pixel num
   int blackNum, whiteNum, totalNum;
   parseBinaryVals(blackNum, whiteNum, totalNum);
 
   oledPrint("bl", blackNum, "wh", whiteNum, 2);
 
+  // the discriminant condition whether the binary value indicate a solid black line, if so, the
+  // tracing status is platform
   if (blackNum > int(totalNum * 0.7f)) {
     tracingStatus = STATUS_PLATFORM;
     return;
@@ -369,18 +394,18 @@ void processCCD(int& trackMidPixel, int& tracingStatus, int explosureTime,
   if (trackMidPixel != -1 && debug)
     drawOneHot(trackMidPixel);
 
-  // Cannot find track
+  // fail to find the track mid pixel from the binary array, this means the track condition here is
+  // ambiguous
   if (trackMidPixel == -1) {
     tracingStatus = STATUS_NO_TRACK;
     return;
   }
 
-  //   if (lastAvailableAverage == 0)
+  // if (lastAvailableAverage == 0)
   lastAvailableAverage = avgVal;
 
-  if (debug) {
+  if (debug)
     printCCDOneHotData();
-  }
 
   // Pixel mapping
   trackMidPixel =

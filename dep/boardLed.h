@@ -4,6 +4,7 @@
 
 #include "pinouts.h"
 
+// setup a default board led for debug use
 void pinoutInitBoardLed() {
   pinMode(PINOUT_BOARD_LED_PIN, OUTPUT);
   digitalWrite(PINOUT_BOARD_LED_PIN, LOW);

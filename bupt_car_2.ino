@@ -69,13 +69,21 @@ void Task1(void* pvParameters) {
   }
 }
 
+/// @brief function to initialize ccd, the main funtion is to find the best explosure time for
+/// future use
+/// @param cameraIsBlocked whether the camera is blocked
+/// @param recordAvailable whether the record is available
+/// @param bestRecord the best record returned when the record is available, we can retrieve
+/// explosure time from this record
 void prepareCCD(bool& cameraIsBlocked, bool& recordAvailable, explosureRecord& bestRecord) {
   display.clearDisplay();
   cameraIsBlocked = false;
 
+  // the main function of preparing ccd
   getBestExplosureTime(bestRecord, cameraIsBlocked, true);
   recordAvailable = bestRecord.isValid;
 
+  // the switch condition to tell whether the camera is been blocked
   Serial.println("----------------------------------------");
   if (cameraIsBlocked) {
     Serial.println("bluetooth mode activated");
@@ -83,6 +91,7 @@ void prepareCCD(bool& cameraIsBlocked, bool& recordAvailable, explosureRecord& b
     Serial.println("tracking mode activated");
   }
 
+  // if the best record is available, then print it out to serial
   if (recordAvailable) {
     Serial.print("best explosure time: ");
     Serial.print(bestRecord.explosureTime);
@@ -94,6 +103,7 @@ void prepareCCD(bool& cameraIsBlocked, bool& recordAvailable, explosureRecord& b
 
   Serial.println("----------------------------------------");
 
+  // print some important values to oled
   oledPrint(bestRecord.explosureTime, "expl", 0);
   oledPrint(bestRecord.avgVal, "parting avg", 1);
   oledFlush();
@@ -104,6 +114,8 @@ void prepareCCD(bool& cameraIsBlocked, bool& recordAvailable, explosureRecord& b
 int loopTime = 0;
 int prevTime = 0;
 
+/// @brief the function to get last loop excecution time in ms
+/// @return last loop excecution time, if the prev time is not set, return -1
 int getTime() {
   loopTime       = millis();
   int prevTimeMs = (prevTime == 0) ? -1 : loopTime - prevTime;
@@ -114,6 +126,8 @@ int getTime() {
 
 bool connected = false;
 
+/// @brief the task assigned to core1
+/// @param pvParameters
 void Task2(void* pvParameters) {
   // turn the color sensor on and setup the blank color, since the initial lighting status may vary,
   // we need to calculate it every time we start
