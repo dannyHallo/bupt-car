@@ -28,20 +28,14 @@ void btSend(char* message) {
 #endif
 }
 
-// void btSend(const char* message) {
-// #ifdef BT_ON
-//   serialBT.write(message);
-// #endif
-// }
-
 int btRecieve() {
 #ifdef BT_ON
-  //while (true) {
   if (serialBT.available()) {
     int message = serialBT.read();
     return message;
   }
-  //}
 #endif
   return -1;
 }
+
+bool btConnected() { return serialBT.connected(); }
