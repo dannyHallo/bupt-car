@@ -36,6 +36,8 @@ void initOled() {
   display.display();
 }
 
+// the following series of oled printing function will help the user to easily print information to
+// the oled screen
 void oledPrint(const char* str, const int row) {
   display.setCursor(0, cLineSpacing * row);
   display.println(str);
@@ -55,20 +57,22 @@ void oledPrint(const float val, const char* hint, const int row) {
   display.println(str);
 }
 
-void oledPrint(const char* hint1, const int i1, const char* hint2, const int i2,
-               const int row) {
+void oledPrint(const char* hint1, const int i1, const char* hint2, const int i2, const int row) {
   display.setCursor(0, cLineSpacing * row);
   char str[100];
   sprintf(str, "%s: %d  %s: %d", hint1, i1, hint2, i2);
   display.println(str);
 }
 
+// since the printing function will only effect the buffer, this function will automatically send
+// the texts to the screen - easy debug!
 void oledPrintAndFlush(const char* str, const int row) {
   oledClear();
   oledPrint(str, row);
   oledFlush();
 }
 
+// an useful function to display a coundown test on the screen
 void oledCountdown(std::string hint, const int delayMs, const int row) {
   for (int i = 0; i < 3; i++) {
     hint += ".";
@@ -77,6 +81,8 @@ void oledCountdown(std::string hint, const int delayMs, const int row) {
   }
 }
 
+// clear the oled screen (buffer)
 void oledClear() { display.clearDisplay(); }
 
+// flush the buffer to the screen
 void oledFlush() { display.display(); }

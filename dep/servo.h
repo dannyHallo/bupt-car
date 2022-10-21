@@ -16,6 +16,8 @@ void initServo() {
   servoWriteAngle(0);
 }
 
+// due to the Ackerman structure, we cannot directly use the output angle of the steering gear as
+// the rotation angle of the wheel
 void servoWriteAngle(float angle) {
   angle += cBias;
 
@@ -31,6 +33,7 @@ void servoWriteAngle(float angle) {
   ledcWrite(0, (t / 20.0f) * ((1 << cServoResolution) - 1));
 }
 
+// simple angle mapping function: DO NOT DIRECTLY CALL THIS FUNCTION
 void servoWritePixel(int trackMidPoint) {
   servoWriteAngle(map(float(trackMidPoint), 0.0f, 128.0f, -cAngleLimit, cAngleLimit));
 }
