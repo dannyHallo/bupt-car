@@ -1,9 +1,10 @@
 import datetime
+from xml.etree.ElementInclude import include
 import serial
 import json
 import xml.etree.ElementTree as ET
 
-debug = True
+debug = False
 
 if debug:
     # x = input("Please input the port number:")
@@ -42,11 +43,17 @@ try:
     while True:
         # for j in range(4):
         if debug:
-            count, cargo[0], cargo[1], cargo[2], cargo[3], additional = string.decode().split(
-                ',')
+            r = string.decode()
         else:
-            count, cargo[0], cargo[1], cargo[2], cargo[3], additional = car.readline(
-            ).decode().split(',')
+            r = car.readline().decode()
+
+        if r == "Platform Reached\r\n":
+            print("Platform Reached")
+            continue
+
+        print("count: " + str(cargo[0]), "cargo:"+str(cargo))
+        count, cargo[0], cargo[1], cargo[2], cargo[3], additional = r.split(
+            ',')
 
         count = int(count)
         cargo = list(map(int, cargo))
